@@ -1,0 +1,49 @@
+# ABOUTME: Reusable workflow to block direct pushes to master branch (only allow PR merges)
+name: Protect Master Branch (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      protected-branch:
+        description: 'Branch to protect from direct pushes'
+        type: string
+        default: 'master'
+
+jobs:
+  block-direct-push:
+    name: Block Direct Push to ${{ inputs.protected-branch }}
+    runs-on: ubuntu-latest
+    # Only run on push events to the protected branch
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.protected-branch)
+    steps:
+      - name: Check if push is from PR merge
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+
+          echo "🔍 Checking push to ${{ inputs.protected-branch }}..."
+          echo "Commit message: $FIRST_LINE"
+          echo ""
+
+          # Pattern to detect PR merge commits
+          # Example: "feat: add feature (#123)" or "Merge pull request #123"
+          PR_NUMBER_PATTERN='\(#[0-9]+\)$'
+          MERGE_PATTERN='^Merge pull request'
+
+          if [[ "$FIRST_LINE" =~ $PR_NUMBER_PATTERN ]] || [[ "$FIRST_LINE" =~ $MERGE_PATTERN ]]; then
+            echo "✅ PR merge detected - allowing push"
+            echo "This commit was created through a pull request merge"
+            exit 0
+          fi
+
+          echo "❌ ERROR: Direct pushes to ${{ inputs.protected-branch }} are not allowed!"
+          echo ""
+          echo "All changes must go through pull requests."
+          echo ""
+          echo "To fix this:"
+          echo "  1. Create a feature branch: git checkout -b feat/your-feature"
+          echo "  2. Push your changes: git push origin feat/your-feature"
+          echo "  3. Create a pull request on GitHub"
+          echo ""
+          echo "This ensures proper code review and CI validation."
+          exit 1

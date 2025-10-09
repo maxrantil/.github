@@ -1,0 +1,52 @@
+# ABOUTME: Reusable workflow to validate PR titles follow conventional commit format
+name: PR Title Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      allowed-types:
+        description: 'Comma-separated list of allowed commit types'
+        type: string
+        default: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert'
+
+jobs:
+  check-title:
+    name: Validate PR Title Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title follows conventional format
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+
+          # Convert comma-separated types to pipe-separated for regex
+          TYPES="${{ inputs.allowed-types }}"
+          TYPES_PATTERN=$(echo "$TYPES" | tr ',' '|')
+
+          # Pattern: type(scope): description OR type: description
+          # Optional ! for breaking changes
+          PATTERN="^($TYPES_PATTERN)(\(.+\))?!?: .+"
+
+          echo "🔍 Checking PR title format..."
+          echo "Title: $TITLE"
+          echo ""
+
+          if ! [[ "$TITLE" =~ $PATTERN ]]; then
+            echo "❌ ERROR: PR title must follow conventional commit format"
+            echo ""
+            echo "Current title: $TITLE"
+            echo ""
+            echo "Valid formats:"
+            echo "  feat(scope): add new feature"
+            echo "  fix(scope): resolve bug"
+            echo "  docs: update documentation"
+            echo "  refactor: improve code structure"
+            echo "  feat!: breaking change"
+            echo ""
+            echo "Valid types: $TYPES"
+            echo ""
+            echo "Optional scope in parentheses: (api), (ui), (core), etc."
+            echo "Optional ! after type/scope for breaking changes"
+            exit 1
+          fi
+
+          echo "✅ PR title format is valid: $TITLE"

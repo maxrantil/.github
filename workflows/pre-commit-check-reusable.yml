@@ -1,0 +1,57 @@
+# ABOUTME: Reusable workflow to run pre-commit hooks in CI (catches bypassed hooks)
+name: Pre-commit Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version for pre-commit'
+        type: string
+        default: '3.x'
+      base-branch:
+        description: 'Base branch to compare against for changed files'
+        type: string
+        default: 'master'
+      run-on-all-files:
+        description: 'Run pre-commit on all files instead of just changed files'
+        type: boolean
+        default: false
+
+jobs:
+  run-pre-commit:
+    name: Run Pre-commit Hooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit hooks
+        run: |
+          echo "🔍 Running pre-commit hooks..."
+          echo "This catches bypassed hooks (--no-verify usage)"
+          echo ""
+
+          if [[ "${{ inputs.run-on-all-files }}" == "true" ]]; then
+            echo "Running on all files..."
+            pre-commit run --all-files
+          else
+            echo "Running on changed files (vs ${{ inputs.base-branch }})..."
+            # Run pre-commit on all changed files between base branch and HEAD
+            pre-commit run --from-ref origin/${{ inputs.base-branch }} --to-ref HEAD
+          fi
+
+      - name: Verify compliance
+        run: |
+          echo "✅ All pre-commit hooks passed"
+          echo ""
+          echo "This ensures code quality even if someone used --no-verify locally"

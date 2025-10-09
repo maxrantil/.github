@@ -109,6 +109,84 @@ jobs:
 - `handoff-dir`: Directory for dated files (default: `docs/implementation`)
 - `min-lines`: Minimum lines for valid doc (default: `10`)
 
+### Block AI Attribution
+
+**File**: `.github/workflows/block-ai-attribution-reusable.yml`
+
+Blocks AI tool and agent attribution in commit messages.
+
+**Usage**:
+```yaml
+jobs:
+  block-attribution:
+    uses: maxrantil/.github/.github/workflows/block-ai-attribution-reusable.yml@main
+    with:
+      base-branch: 'master'
+```
+
+**Inputs**:
+- `base-branch`: Base branch to compare (default: `master`)
+- `block-ai-tools`: Block AI tool names in Co-authored-by and Generated with (default: `true`)
+- `block-agent-mentions`: Block agent names in commit messages (default: `true`)
+
+### PR Title Check
+
+**File**: `.github/workflows/pr-title-check-reusable.yml`
+
+Validates PR titles follow conventional commit format.
+
+**Usage**:
+```yaml
+jobs:
+  pr-title:
+    uses: maxrantil/.github/.github/workflows/pr-title-check-reusable.yml@main
+    with:
+      allowed-types: 'feat,fix,docs,style,refactor,test,chore'
+```
+
+**Inputs**:
+- `allowed-types`: Comma-separated commit types (default: `feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert`)
+
+### Protect Master Branch
+
+**File**: `.github/workflows/protect-master-reusable.yml`
+
+Blocks direct pushes to master branch (only allows PR merges).
+
+**Usage**:
+```yaml
+jobs:
+  protect-master:
+    uses: maxrantil/.github/.github/workflows/protect-master-reusable.yml@main
+    with:
+      protected-branch: 'master'
+```
+
+**Inputs**:
+- `protected-branch`: Branch to protect (default: `master`)
+
+**Note**: This workflow runs on `push` events, not `pull_request`. Add it to a separate workflow file or use `on: [push, pull_request]`.
+
+### Pre-commit Check
+
+**File**: `.github/workflows/pre-commit-check-reusable.yml`
+
+Runs pre-commit hooks in CI to catch bypassed hooks.
+
+**Usage**:
+```yaml
+jobs:
+  pre-commit:
+    uses: maxrantil/.github/.github/workflows/pre-commit-check-reusable.yml@main
+    with:
+      python-version: '3.11'
+```
+
+**Inputs**:
+- `python-version`: Python version for pre-commit (default: `3.x`)
+- `base-branch`: Base branch to compare for changed files (default: `master`)
+- `run-on-all-files`: Run on all files instead of just changed files (default: `false`)
+
 ## Workflow Templates
 
 Templates appear in GitHub's "Actions" → "New workflow" interface.
@@ -197,7 +275,11 @@ jobs:
 │   ├── python-test-reusable.yml
 │   ├── shell-quality-reusable.yml
 │   ├── conventional-commit-check-reusable.yml
-│   └── session-handoff-check-reusable.yml
+│   ├── session-handoff-check-reusable.yml
+│   ├── block-ai-attribution-reusable.yml
+│   ├── pr-title-check-reusable.yml
+│   ├── protect-master-reusable.yml
+│   └── pre-commit-check-reusable.yml
 ├── workflow-templates/             # Templates for GitHub UI
 │   ├── python-ci.yml
 │   ├── python-ci.properties.json

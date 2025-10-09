@@ -1,0 +1,90 @@
+# ABOUTME: Reusable workflow to block AI/agent attribution in commit messages
+name: Block AI Attribution (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      base-branch:
+        description: 'Base branch to compare against'
+        type: string
+        default: 'master'
+      block-ai-tools:
+        description: 'Block AI tool names in Co-authored-by and Generated with'
+        type: boolean
+        default: true
+      block-agent-mentions:
+        description: 'Block agent names in commit messages'
+        type: boolean
+        default: true
+
+jobs:
+  check-attribution:
+    name: Detect AI Attribution Markers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for AI attribution markers
+        run: |
+          echo "🔍 Checking commits for AI/agent attribution..."
+          echo ""
+
+          FOUND_VIOLATION=false
+
+          if [[ "${{ inputs.block-ai-tools }}" == "true" ]]; then
+            # Check for AI tool attribution in Co-authored-by
+            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "Co-authored-by:.*(Claude|GPT|ChatGPT|Copilot|Gemini|Bard|AI)"; then
+              echo "❌ ERROR: AI tool attribution detected in Co-authored-by!"
+              echo "Found AI tool name in co-author field"
+              FOUND_VIOLATION=true
+            fi
+
+            # Check for "Generated with" messages
+            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "Generated with.*(Claude|AI|GPT|ChatGPT|Copilot)"; then
+              echo "❌ ERROR: AI generation attribution detected!"
+              echo "Found: Generated with [AI tool]"
+              FOUND_VIOLATION=true
+            fi
+
+            # Check for Claude Code specific attribution
+            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eq "claude\.com/claude-code"; then
+              echo "❌ ERROR: Claude Code attribution link detected!"
+              echo "Found: claude.com/claude-code reference"
+              FOUND_VIOLATION=true
+            fi
+          fi
+
+          if [[ "${{ inputs.block-agent-mentions }}" == "true" ]]; then
+            # Check for agent mentions (architecture-designer, security-validator, etc.)
+            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer|documentation-knowledge-manager|ux-accessibility-i18n-agent|devops-deployment-agent|general-purpose-agent)"; then
+              echo "❌ ERROR: Agent attribution detected in commit!"
+              echo "Found: Agent mention in commit message"
+              echo ""
+              echo "Policy: Agent validations should be documented in:"
+              echo "  ✅ Session handoff files"
+              echo "  ✅ Implementation documentation"
+              echo "  ✅ PRD/PDR documents"
+              echo "  ❌ NOT in commit messages"
+              FOUND_VIOLATION=true
+            fi
+
+            # Check for generic agent references
+            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "agent (review|validation|approval|check)"; then
+              echo "❌ ERROR: Generic agent reference detected in commit!"
+              echo "Found: Reference to agent workflow in commit message"
+              FOUND_VIOLATION=true
+            fi
+          fi
+
+          if [[ "$FOUND_VIOLATION" == "true" ]]; then
+            echo ""
+            echo "Please remove AI/agent attribution from commit messages."
+            echo "✅ Human co-authors are allowed and encouraged!"
+            exit 1
+          fi
+
+          echo "✅ No AI attribution markers found"
+          echo "✅ Human co-authors are allowed and encouraged!"
