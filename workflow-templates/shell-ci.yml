@@ -1,0 +1,30 @@
+# ABOUTME: Template for Shell CI - uses reusable workflows from maxrantil/.github
+name: Shell CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  # Run shell quality checks using reusable workflow
+  shell-quality:
+    uses: maxrantil/.github/.github/workflows/shell-quality-reusable.yml@main
+    with:
+      shellcheck-severity: 'warning'
+      shfmt-options: '-d -i 4 -ci -sr'
+      # Customize shfmt-paths if needed:
+      # shfmt-paths: 'src/*.sh scripts/*.sh'
+
+  # Check conventional commit format
+  commit-format:
+    uses: maxrantil/.github/.github/workflows/conventional-commit-check-reusable.yml@main
+    with:
+      base-branch: 'master'  # Change to 'main' if needed
+
+  # Verify session handoff documentation
+  session-handoff:
+    uses: maxrantil/.github/.github/workflows/session-handoff-check-reusable.yml@main
+    with:
+      base-branch: 'master'  # Change to 'main' if needed

@@ -1,0 +1,29 @@
+# ABOUTME: Template for Python CI - uses reusable workflow from maxrantil/.github
+name: Python CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  # Run Python tests using reusable workflow
+  test:
+    uses: maxrantil/.github/.github/workflows/python-test-reusable.yml@main
+    with:
+      python-version: '3.11'  # Customize as needed
+      install-command: 'pip install -e ".[dev]"'
+      test-command: 'pytest --cov --cov-report=term-missing'
+
+  # Check conventional commit format
+  commit-format:
+    uses: maxrantil/.github/.github/workflows/conventional-commit-check-reusable.yml@main
+    with:
+      base-branch: 'master'  # Change to 'main' if needed
+
+  # Verify session handoff documentation
+  session-handoff:
+    uses: maxrantil/.github/.github/workflows/session-handoff-check-reusable.yml@main
+    with:
+      base-branch: 'master'  # Change to 'main' if needed

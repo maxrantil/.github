@@ -1,0 +1,14 @@
+{
+  "name": "Shell CI with CLAUDE.md Compliance",
+  "description": "Complete Shell script CI workflow with ShellCheck, shfmt, commit format checking, and session handoff verification. Uses reusable workflows from maxrantil/.github.",
+  "iconName": "terminal",
+  "categories": [
+    "Shell",
+    "Testing",
+    "CI"
+  ],
+  "filePatterns": [
+    "\\.sh$",
+    "^Dockerfile$"
+  ]
+}

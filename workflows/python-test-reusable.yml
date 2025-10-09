@@ -1,0 +1,54 @@
+# ABOUTME: Reusable Python test workflow - callable from any repository
+name: Python Tests (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.11'
+      install-command:
+        description: 'Command to install dependencies'
+        required: false
+        type: string
+        default: 'pip install -e ".[dev]"'
+      test-command:
+        description: 'Command to run tests'
+        required: false
+        type: string
+        default: 'pytest --cov --cov-report=term-missing'
+      working-directory:
+        description: 'Working directory for tests'
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: ${{ inputs.install-command }}
+
+      - name: Run tests
+        working-directory: ${{ inputs.working-directory }}
+        run: ${{ inputs.test-command }}
+
+      - name: Verify tests passed
+        run: |
+          echo "✅ All tests passed successfully"
+          echo ""
+          echo "Per CLAUDE.md Section 3: TDD is MANDATORY"
+          echo "All features must have tests before merging"

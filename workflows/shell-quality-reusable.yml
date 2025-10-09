@@ -1,0 +1,61 @@
+# ABOUTME: Reusable shell quality workflow - ShellCheck and shfmt validation
+name: Shell Quality (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      shellcheck-severity:
+        description: 'ShellCheck severity level'
+        required: false
+        type: string
+        default: 'warning'
+      shellcheck-ignore-paths:
+        description: 'Paths to ignore in ShellCheck (space-separated)'
+        required: false
+        type: string
+        default: ''
+      shfmt-paths:
+        description: 'Paths to check with shfmt (space-separated)'
+        required: false
+        type: string
+        default: '**/*.sh'
+      shfmt-options:
+        description: 'shfmt formatting options'
+        required: false
+        type: string
+        default: '-d -i 4 -ci -sr'
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: ${{ inputs.shellcheck-severity }}
+          ignore_paths: ${{ inputs.shellcheck-ignore-paths }}
+
+  shfmt:
+    name: Shell Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shfmt
+        run: |
+          wget -O shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
+          chmod +x shfmt
+          sudo mv shfmt /usr/local/bin/
+
+      - name: Check formatting
+        run: |
+          if [[ "${{ inputs.shfmt-paths }}" == "**/*.sh" ]]; then
+            # Find all .sh files
+            find . -name "*.sh" -type f -print0 | xargs -0 shfmt ${{ inputs.shfmt-options }}
+          else
+            # Use specified paths
+            shfmt ${{ inputs.shfmt-options }} ${{ inputs.shfmt-paths }}
+          fi

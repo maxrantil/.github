@@ -1,0 +1,15 @@
+{
+  "name": "Python CI with CLAUDE.md Compliance",
+  "description": "Complete Python CI workflow with tests, commit format checking, and session handoff verification. Uses reusable workflows from maxrantil/.github.",
+  "iconName": "python",
+  "categories": [
+    "Python",
+    "Testing",
+    "CI"
+  ],
+  "filePatterns": [
+    "setup.py$",
+    "pyproject.toml$",
+    "requirements.txt$"
+  ]
+}

@@ -1,0 +1,91 @@
+# ABOUTME: Reusable session handoff verification workflow
+name: Session Handoff Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      base-branch:
+        description: 'Base branch to compare against'
+        required: false
+        type: string
+        default: 'master'
+      handoff-file:
+        description: 'Expected session handoff file name'
+        required: false
+        type: string
+        default: 'SESSION_HANDOVER.md'
+      handoff-dir:
+        description: 'Directory for dated session handoff files'
+        required: false
+        type: string
+        default: 'docs/implementation'
+      min-lines:
+        description: 'Minimum lines for valid handoff document'
+        required: false
+        type: number
+        default: 10
+
+jobs:
+  check-handoff:
+    name: Check Session Handoff Documentation
+    runs-on: ubuntu-latest
+    # Only run when PR is marked as ready (not draft)
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify session handoff exists
+        run: |
+          echo "Checking for session handoff documentation..."
+          echo ""
+
+          # Check if main handoff file was updated in this PR
+          if git diff --name-only origin/${{ inputs.base-branch }}..HEAD | grep -q "${{ inputs.handoff-file }}"; then
+            echo "✅ Session handoff documentation found: ${{ inputs.handoff-file }} updated"
+            echo ""
+            echo "Verifying handoff content..."
+
+            # Check if the file has meaningful content
+            if [[ $(wc -l < "${{ inputs.handoff-file }}") -lt ${{ inputs.min-lines }} ]]; then
+              echo "⚠️  WARNING: ${{ inputs.handoff-file }} seems too short (< ${{ inputs.min-lines }} lines)"
+              echo "Expected: Comprehensive handoff with context, next steps, and startup prompt"
+            else
+              echo "✅ Handoff document has substantial content"
+            fi
+
+            exit 0
+          fi
+
+          # Check for dated session handoff files
+          if git diff --name-only origin/${{ inputs.base-branch }}..HEAD | grep -E "${{ inputs.handoff-dir }}/SESSION.*\.md"; then
+            echo "✅ Session handoff documentation found: Dated session file in ${{ inputs.handoff-dir }}"
+            exit 0
+          fi
+
+          # No handoff found - fail the check
+          echo "❌ ERROR: No session handoff documentation detected"
+          echo ""
+          echo "Per CLAUDE.md Section 5: Session handoff is MANDATORY after:"
+          echo "  • Completing any GitHub issue"
+          echo "  • Merging any PR"
+          echo "  • Completing any phase/milestone"
+          echo "  • Ending any work session"
+          echo ""
+          echo "Expected files (one of):"
+          echo "  • ${{ inputs.handoff-file }} (recommended - living document)"
+          echo "  • ${{ inputs.handoff-dir }}/SESSION-HANDOFF-[issue]-[date].md"
+          echo ""
+          echo "A proper handoff should include:"
+          echo "  • What was completed"
+          echo "  • Current project state"
+          echo "  • Agent validation status"
+          echo "  • Next session priorities"
+          echo "  • Startup prompt for next session"
+          echo ""
+          echo "This is a FAILURE - session handoff is MANDATORY per CLAUDE.md"
+
+          # Exit with failure (blocks PR)
+          exit 1

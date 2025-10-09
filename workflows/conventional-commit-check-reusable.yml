@@ -1,0 +1,68 @@
+# ABOUTME: Reusable conventional commit format checker
+name: Conventional Commit Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      allowed-types:
+        description: 'Comma-separated list of allowed commit types'
+        required: false
+        type: string
+        default: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert'
+      base-branch:
+        description: 'Base branch to compare against'
+        required: false
+        type: string
+        default: 'master'
+
+jobs:
+  check-commit-format:
+    name: Check Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          # Convert input to regex pattern
+          TYPES=$(echo "${{ inputs.allowed-types }}" | tr ',' '|')
+          COMMITS=$(git log origin/${{ inputs.base-branch }}..HEAD --format=%s)
+
+          echo "Checking commits against pattern: ^($TYPES)(\(.+\))?!?: .+"
+          echo ""
+
+          FAILED=0
+          while IFS= read -r commit; do
+            # Skip merge commits
+            if [[ "$commit" =~ ^Merge ]]; then
+              echo "⏭️  Skipping merge commit: $commit"
+              continue
+            fi
+
+            # Check conventional commit format
+            if ! [[ "$commit" =~ ^($TYPES)(\(.+\))?!?:\ .+ ]]; then
+              echo "❌ Invalid commit message: $commit"
+              FAILED=1
+            else
+              echo "✅ Valid: $commit"
+            fi
+          done <<< "$COMMITS"
+
+          echo ""
+          if [[ $FAILED -eq 1 ]]; then
+            echo "❌ Some commits don't follow conventional commit format"
+            echo ""
+            echo "Expected format: type(scope): description"
+            echo "Allowed types: ${{ inputs.allowed-types }}"
+            echo ""
+            echo "Examples:"
+            echo "  feat(api): add user authentication"
+            echo "  fix: resolve memory leak in parser"
+            echo "  docs(readme): update installation instructions"
+            exit 1
+          fi
+
+          echo "✅ All commit messages follow conventional commit format"
