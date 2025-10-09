@@ -1,3 +1,4 @@
+# ABOUTME: Central documentation for .github reusable workflows repository
 # .github
 
 Centralized reusable workflows and templates for all maxrantil repositories.
@@ -32,14 +33,18 @@ jobs:
     uses: maxrantil/.github/.github/workflows/python-test-reusable.yml@main
     with:
       python-version: '3.11'
-      install-command: 'pip install -e ".[dev]"'
-      test-command: 'pytest --cov --cov-report=term-missing'
+      # Uses uv by default per CLAUDE.md requirements
+      # Customize if needed:
+      # pre-install-command: 'sudo apt-get install -y system-package'
+      # install-command: 'uv sync'
+      # test-command: 'uv run pytest --cov'
 ```
 
 **Inputs**:
 - `python-version`: Python version (default: `3.11`)
-- `install-command`: Dependency installation command (default: `pip install -e ".[dev]"`)
-- `test-command`: Test execution command (default: `pytest --cov --cov-report=term-missing`)
+- `pre-install-command`: Command before dependency install (default: `''`) - For system packages
+- `install-command`: Dependency installation command (default: `uv sync`) - Per CLAUDE.md UV requirement
+- `test-command`: Test execution command (default: `uv run pytest --cov --cov-report=term-missing`)
 - `working-directory`: Working directory (default: `.`)
 
 ### Shell Quality Workflow
@@ -258,13 +263,72 @@ Per CLAUDE.md requirements:
 3. **Session handoff** after each change
 4. **Test workflows** before merging
 
+## Testing Workflow Changes
+
+**CRITICAL**: All workflow changes MUST be tested before merging.
+
+### Method 1: Local Testing with act (Optional - Quick Iteration)
+
+```bash
+# Install act (nektos/act)
+brew install act  # macOS
+# or: https://github.com/nektos/act#installation
+
+# List available workflows
+act -l
+
+# Simulate pull_request event
+act pull_request
+
+# Test specific workflow
+act -W .github/workflows/python-test-reusable.yml
+```
+
+**Limitations**: Some GitHub Actions features may not work identically in act.
+
+### Method 2: Test Repository (Required Before Merge)
+
+1. **Create test repository** or use existing project
+2. **Add workflow** that uses modified reusable workflow:
+```yaml
+# .github/workflows/test-reusable.yml
+name: Test Reusable Workflow
+on: [push, pull_request]
+
+jobs:
+  test:
+    uses: maxrantil/.github/.github/workflows/python-test-reusable.yml@your-branch-name
+    with:
+      python-version: '3.11'
+```
+3. **Push to test repository** and verify workflow runs successfully
+4. **Test edge cases** with different input combinations
+5. **Verify all jobs pass** and output is as expected
+
+### Method 3: Gradual Rollout (For Breaking Changes)
+
+1. Create new semantic version tag (e.g., `v2.0.0`)
+2. Update **one** consuming repository to use new version
+3. Validate thoroughly in real-world usage
+4. Update other repositories once proven stable
+5. Update `@main` pointer after validation
+
+### Pre-Merge Checklist
+
+- [ ] Workflow tested in real repository (not just locally)
+- [ ] Edge cases validated (different inputs, failure modes)
+- [ ] Documentation updated (README, input descriptions)
+- [ ] Breaking changes documented with migration guide
+- [ ] Session handoff created per CLAUDE.md requirements
+
 ## Contributing
 
 1. Create feature branch: `feat/improve-python-workflow`
-2. Make changes
-3. Test locally with `act` or in test repository
-4. Create PR with session handoff documentation
-5. Merge to master after validation
+2. Make changes to workflows
+3. **Test in sandbox repository** (see Testing section above)
+4. Update README.md with any new inputs or behavior changes
+5. Create PR with session handoff documentation
+6. Merge to master after validation
 
 ## License
 

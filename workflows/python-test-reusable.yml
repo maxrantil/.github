@@ -9,16 +9,21 @@ on:
         required: false
         type: string
         default: '3.11'
-      install-command:
-        description: 'Command to install dependencies'
+      pre-install-command:
+        description: 'Command to run before dependency installation (e.g., apt-get install system packages)'
         required: false
         type: string
-        default: 'pip install -e ".[dev]"'
+        default: ''
+      install-command:
+        description: 'Command to install dependencies (use uv sync per CLAUDE.md)'
+        required: false
+        type: string
+        default: 'uv sync'
       test-command:
         description: 'Command to run tests'
         required: false
         type: string
-        default: 'pytest --cov --cov-report=term-missing'
+        default: 'uv run pytest --cov --cov-report=term-missing'
       working-directory:
         description: 'Working directory for tests'
         required: false
@@ -37,6 +42,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Run pre-install commands
+        if: inputs.pre-install-command != ''
+        working-directory: ${{ inputs.working-directory }}
+        run: ${{ inputs.pre-install-command }}
 
       - name: Install dependencies
         working-directory: ${{ inputs.working-directory }}

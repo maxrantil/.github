@@ -56,6 +56,16 @@ jobs:
               echo "✅ Handoff document has substantial content"
             fi
 
+            # Verify startup prompt format per CLAUDE.md Section 5
+            echo ""
+            echo "Verifying startup prompt format..."
+            if grep -q "Read CLAUDE.md to understand our workflow" "${{ inputs.handoff-file }}"; then
+              echo "✅ Startup prompt has required opening: 'Read CLAUDE.md to understand our workflow'"
+            else
+              echo "⚠️  WARNING: Startup prompt should begin with: 'Read CLAUDE.md to understand our workflow, then [action]'"
+              echo "Per CLAUDE.md Section 5: This is MANDATORY for session handoff startup prompts"
+            fi
+
             exit 0
           fi
 
