@@ -272,6 +272,35 @@ Follow CLAUDE.md Section 5 template from parent guidelines.
 - **"HANDOFF"** → Immediately trigger session handoff protocol
 - **"MANDATORY-AGENTS"** → Force immediate agent analysis
 - **"CROSS-VALIDATE"** → Run all validation agents on current state
+- **"TEMPLATE [name]"** → Fetch and display specific template from docs/templates/
+
+### Template Command Usage
+
+When Doctor Hubert says **"TEMPLATE [name]"**, immediately fetch and display the requested template.
+
+**Available Templates:**
+- `TEMPLATE PRD` → Product Requirements Document template
+- `TEMPLATE PDR` → Product Design & Requirements template
+- `TEMPLATE SESSION-HANDOFF` → Session handoff template
+- `TEMPLATE ISSUE` → GitHub issue template with TDD checklist
+- `TEMPLATE PR` → GitHub pull request template
+- `TEMPLATE COMMIT` → Commit message template
+- `TEMPLATE WRITING` → Anti-AI writing style guidelines
+
+**Example:**
+```
+Doctor Hubert: "TEMPLATE PRD"
+Claude: [Reads and displays /home/mqx/workspace/.github/docs/templates/PRD-template.md]
+```
+
+**Template URLs** (for reference in other repos):
+- All templates: https://github.com/maxrantil/.github/tree/main/docs/templates
+- PRD: https://github.com/maxrantil/.github/blob/main/docs/templates/PRD-template.md
+- PDR: https://github.com/maxrantil/.github/blob/main/docs/templates/PDR-template.md
+- Session Handoff: https://github.com/maxrantil/.github/blob/main/docs/templates/session-handoff-template.md
+- Issue: https://github.com/maxrantil/.github/blob/main/docs/templates/github-issue-template.md
+- PR: https://github.com/maxrantil/.github/blob/main/docs/templates/github-pr-template.md
+- Writing Style: https://github.com/maxrantil/.github/blob/main/docs/templates/WRITING_STYLE.md
 
 ---
 

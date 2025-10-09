@@ -203,6 +203,57 @@ Complete Python CI with tests, commit checks, and handoff verification.
 
 Complete Shell CI with quality checks, commit format, and handoff verification.
 
+## Document Templates
+
+Centralized templates for project documentation, issues, PRs, and development guidelines.
+
+**Location**: `docs/templates/`
+
+### Available Templates
+
+- **PRD-template.md** - Product Requirements Document
+- **PDR-template.md** - Product Design & Requirements
+- **session-handoff-template.md** - Session continuity documentation
+- **github-issue-template.md** - GitHub issue with TDD checklist (consolidated)
+- **github-issue-prd-template.md** - PRD-specific issue tracking
+- **github-issue-pdr-template.md** - PDR-specific issue tracking
+- **github-pr-template.md** - Pull request template with agent validation
+- **github-commit-template.md** - Conventional commit message format
+- **WRITING_STYLE.md** - Anti-AI writing guidelines
+
+### Usage from Other Repositories
+
+**Direct URLs** (for reference in CLAUDE.md files):
+```markdown
+- All templates: https://github.com/maxrantil/.github/tree/main/docs/templates
+- PRD: https://github.com/maxrantil/.github/blob/main/docs/templates/PRD-template.md
+- PDR: https://github.com/maxrantil/.github/blob/main/docs/templates/PDR-template.md
+- Session Handoff: https://github.com/maxrantil/.github/blob/main/docs/templates/session-handoff-template.md
+- Issue: https://github.com/maxrantil/.github/blob/main/docs/templates/github-issue-template.md
+- PR: https://github.com/maxrantil/.github/blob/main/docs/templates/github-pr-template.md
+- Writing Style: https://github.com/maxrantil/.github/blob/main/docs/templates/WRITING_STYLE.md
+```
+
+### TEMPLATE Command
+
+In CLAUDE.md files across repositories, the **TEMPLATE command** allows quick template fetching:
+
+```markdown
+Doctor Hubert: "TEMPLATE PRD"
+Claude: [Reads and displays PRD-template.md]
+```
+
+**Available commands:**
+- `TEMPLATE PRD` → Product Requirements Document
+- `TEMPLATE PDR` → Product Design & Requirements
+- `TEMPLATE SESSION-HANDOFF` → Session handoff template
+- `TEMPLATE ISSUE` → GitHub issue template
+- `TEMPLATE PR` → Pull request template
+- `TEMPLATE COMMIT` → Commit message template
+- `TEMPLATE WRITING` → Anti-AI writing style guidelines
+
+This enables Doctor Hubert to instantly retrieve templates without navigating GitHub URLs.
+
 ## Usage Examples
 
 ### Migrating Existing Repository
@@ -285,9 +336,19 @@ jobs:
 │   ├── python-ci.properties.json
 │   ├── shell-ci.yml
 │   └── shell-ci.properties.json
-├── profile/
-│   └── README.md                  # GitHub profile page
-└── README.md                      # This file
+├── docs/
+│   └── templates/                  # Centralized project templates
+│       ├── PRD-template.md
+│       ├── PDR-template.md
+│       ├── session-handoff-template.md
+│       ├── github-issue-template.md
+│       ├── github-issue-prd-template.md
+│       ├── github-issue-pdr-template.md
+│       ├── github-pr-template.md
+│       ├── github-commit-template.md
+│       └── WRITING_STYLE.md
+├── CLAUDE.md                       # Development guidelines
+└── README.md                       # This file
 ```
 
 ## Versioning Strategy
