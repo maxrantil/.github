@@ -1,0 +1,89 @@
+# ABOUTME: Reusable workflow to block AI/agent attribution in PR body/description
+name: PR Body AI Attribution Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      block-ai-tools:
+        description: 'Block AI tool names in PR body'
+        type: boolean
+        default: true
+      block-agent-mentions:
+        description: 'Block agent names in PR body'
+        type: boolean
+        default: true
+
+jobs:
+  check-pr-body:
+    name: Check PR Body for AI Attribution
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Check PR body for AI attribution
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prBody = context.payload.pull_request.body || '';
+            const blockAiTools = ${{ inputs.block-ai-tools }};
+            const blockAgentMentions = ${{ inputs.block-agent-mentions }};
+
+            let foundViolation = false;
+            const violations = [];
+
+            console.log('🔍 Checking PR body for AI/agent attribution...');
+            console.log('');
+
+            if (blockAiTools) {
+              // Check for AI tool attribution
+              const aiToolPattern = /(Co-authored-by|Generated with|Created with|Built with|Written by).*(Claude|GPT|ChatGPT|Copilot|Gemini|Bard|AI Assistant)/i;
+              if (aiToolPattern.test(prBody)) {
+                violations.push('❌ ERROR: AI tool attribution detected in PR body!');
+                violations.push('Found AI tool name in attribution text');
+                foundViolation = true;
+              }
+
+              // Check for Claude Code specific attribution
+              if (prBody.includes('claude.com/claude-code')) {
+                violations.push('❌ ERROR: Claude Code attribution link detected!');
+                violations.push('Found: claude.com/claude-code reference in PR body');
+                foundViolation = true;
+              }
+
+              // Check for "Generated with Claude Code" emoji pattern
+              if (/🤖.*Generated with.*Claude Code/i.test(prBody)) {
+                violations.push('❌ ERROR: Claude Code generation attribution detected!');
+                violations.push('Found: 🤖 Generated with Claude Code pattern');
+                foundViolation = true;
+              }
+            }
+
+            if (blockAgentMentions) {
+              // Check for agent mentions in PR body
+              const agentPattern = /(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer|documentation-knowledge-manager|ux-accessibility-i18n-agent|devops-deployment-agent|general-purpose-agent)/i;
+              if (agentPattern.test(prBody)) {
+                violations.push('❌ ERROR: Agent attribution detected in PR body!');
+                violations.push('Found: Agent mention in PR description');
+                violations.push('');
+                violations.push('Policy: Agent validations should be documented in:');
+                violations.push('  ✅ Session handoff files');
+                violations.push('  ✅ Implementation documentation');
+                violations.push('  ✅ PRD/PDR documents');
+                violations.push('  ❌ NOT in PR descriptions');
+                foundViolation = true;
+              }
+            }
+
+            if (foundViolation) {
+              violations.forEach(v => console.log(v));
+              console.log('');
+              console.log('Please remove AI/agent attribution from PR body.');
+              console.log('✅ Human co-authors are allowed and encouraged!');
+              console.log('✅ Document agent validations in session handoff files instead.');
+              core.setFailed('AI/agent attribution found in PR body');
+            } else {
+              console.log('✅ No AI attribution markers found in PR body');
+              console.log('✅ Human co-authors are allowed and encouraged!');
+            }
