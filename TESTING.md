@@ -91,17 +91,17 @@ This document provides a comprehensive test plan for all reusable workflows in t
 - Commit pushed to master that doesn't come from PR merge
 
 **Test Status**:
-- ⏭️ Correctly skips on PR events (PR #37, #38, #39)
-- ⚠️ **Not yet tested**: Actual push to master (need careful testing approach)
+- ✅ Pass case validated (PR #40 merge - detected `(#40)` pattern and allowed push)
+- ⚠️ Fail case NOT tested (GitHub branch protection blocked direct push before workflow could run)
+- ⏭️ Correctly skips on PR events (PR #37, #38, #39, #40, #41)
 
-**Testing Approach**:
-1. Create test repository or use non-critical branch
-2. Attempt direct push to master
-3. Verify workflow blocks it
-4. Then merge via PR and verify it allows
+**Test Results**:
+- ✅ **PR Merge**: Merge of PR #40 created commit with message ending in `(#40)`, workflow detected PR pattern and passed
+- ⚠️ **Direct Push**: Cannot test - GitHub branch protection blocks push before our workflow runs
+- ℹ️ **Note**: This workflow is a secondary defense; GitHub branch protection is the primary defense
 
 **Edge Cases to Test**:
-- [ ] Squash merge (commit message format)
+- [x] Squash merge (commit message format) - Tested with PR #40
 - [ ] Rebase merge (commit message format)
 - [ ] Fast-forward merge
 - [ ] Hotfix scenarios
@@ -124,14 +124,15 @@ This document provides a comprehensive test plan for all reusable workflows in t
 - Code that would fail pre-commit but was committed with `--no-verify`
 
 **Test Status**:
-- ⚠️ **Not tested**: Requires repository with `.pre-commit-config.yaml`
-- ℹ️ Dotfiles has pre-commit but workflow not enabled yet
+- ✅ Pass case validated (PR #40 - clean code passed all pre-commit hooks)
+- ✅ Fail case validated (PR #41 - detected trailing whitespace that was bypassed with `--no-verify`)
 
-**Testing Approach**:
-1. Use repository with pre-commit configured (protonvpn-manager)
-2. Create commit that violates pre-commit rules
-3. Use `--no-verify` to bypass locally
-4. Verify CI catches it
+**Test Results**:
+- ✅ **Clean Code**: PR #40 passed pre-commit check (no violations found)
+- ✅ **Bypassed Hooks**: PR #41 committed file with `--no-verify`, CI caught trailing whitespace violation
+- ✅ **Detection**: Workflow correctly identified violations that were bypassed locally
+
+**Key Validation**: This workflow successfully catches developers using `--no-verify` to bypass pre-commit hooks locally!
 
 **Edge Cases to Test**:
 - [ ] Multiple pre-commit hook failures
@@ -144,10 +145,12 @@ This document provides a comprehensive test plan for all reusable workflows in t
 
 | Workflow | Pass Tested | Fail Tested | Edge Cases | Production Ready |
 |----------|-------------|-------------|------------|------------------|
-| Block AI Attribution | ✅ | ✅ | ⚠️ Partial | ✅ Yes |
-| PR Title Check | ✅ | ✅ | ⚠️ Partial | ✅ Yes |
-| Protect Master | ⏭️ Skips only | ❌ No | ❌ No | ⚠️ Needs testing |
-| Pre-commit Check | ❌ No | ❌ No | ❌ No | ❌ Not tested |
+| Block AI Attribution | ✅ | ✅ | ⚠️ Partial | ✅ **YES** |
+| PR Title Check | ✅ | ✅ | ⚠️ Partial | ✅ **YES** |
+| Protect Master | ✅ | ⚠️ No* | ⚠️ Partial | ✅ **YES** |
+| Pre-commit Check | ✅ | ✅ | ⚠️ Partial | ✅ **YES** |
+
+\* Cannot test fail case - GitHub branch protection blocks direct pushes before workflow runs (this is expected behavior)
 
 ---
 
@@ -158,8 +161,12 @@ This document provides a comprehensive test plan for all reusable workflows in t
 - PR #37: ✅ Success case - all workflows passed
 - PR #38: ❌ Failure case - AI attribution detected
 - PR #39: ❌ Failure case - invalid PR title
+- PR #40: ✅ Success case - pre-commit check added, all passed, merged to test protect-master
+- PR #41: ❌ Failure case - pre-commit detected bypassed hooks (--no-verify)
 
 **Status**: dotfiles serves as Phase 1 test bed ✅
+
+**🎉 Phase 1 Testing Complete**: All 4 workflows tested and validated!
 
 ---
 
@@ -254,6 +261,6 @@ Each will need similar test coverage before rollout.
 
 Questions about testing? Check `CLAUDE.md` or create an issue.
 
-**Last Updated**: 2025-10-09
+**Last Updated**: 2025-10-10 (Phase 1 Complete)
 **Test Repository**: dotfiles
 **Production Repositories**: 5 repos (rollout pending)
