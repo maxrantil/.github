@@ -187,6 +187,180 @@ jobs:
 - `base-branch`: Base branch to compare for changed files (default: `master`)
 - `run-on-all-files`: Run on all files instead of just changed files (default: `false`)
 
+## Issue Validation Workflows
+
+Phase 2 workflows for automated issue validation, labeling, and policy enforcement.
+
+### Issue AI Attribution Check
+
+**File**: `.github/workflows/issue-ai-attribution-check-reusable.yml`
+
+Detects and blocks AI tool attribution and agent mentions in GitHub issues.
+
+**Usage**:
+```yaml
+jobs:
+  ai-attribution-check:
+    permissions:
+      issues: write
+    uses: maxrantil/.github/.github/workflows/issue-ai-attribution-check-reusable.yml@master
+    with:
+      fail_on_attribution: true
+```
+
+**Inputs**:
+- `fail_on_attribution`: Whether to fail the workflow when AI attribution is detected (default: `true`)
+
+**Behavior**:
+- Scans issue title and body for AI tool patterns (Claude, GPT, ChatGPT, Copilot, etc.)
+- Detects agent validation mentions (architecture-designer, security-validator, etc.)
+- Posts detailed policy explanation comment
+- Adds `needs-revision` label
+- Fails workflow (if enabled) to block issue until edited
+
+**Policy Enforced**: Per CLAUDE.md Section 1, AI/agent attribution should NOT be in issues, commits, or PRs. Agent validations belong in session handoff and implementation docs.
+
+### Issue Format Check
+
+**File**: `.github/workflows/issue-format-check-reusable.yml`
+
+Validates issue structure and completeness, providing feedback for improvement.
+
+**Usage**:
+```yaml
+jobs:
+  format-check:
+    permissions:
+      issues: write
+    uses: maxrantil/.github/.github/workflows/issue-format-check-reusable.yml@master
+    with:
+      min_body_length: 20
+      fail_on_problems: true
+```
+
+**Inputs**:
+- `min_body_length`: Minimum required length for issue body in characters (default: `20`)
+- `fail_on_problems`: Whether to fail workflow on critical format problems (default: `true`)
+
+**Behavior**:
+- Checks for empty or very short descriptions
+- Detects vague titles
+- Suggests issue templates for better structure
+- Posts structured feedback with recommended formats for bugs/features/tasks
+- Adds `needs-info` label for critical problems
+- Optionally fails workflow to encourage better issues
+
+### Issue PRD/PDR Reminder
+
+**File**: `.github/workflows/issue-prd-reminder-reusable.yml`
+
+Reminds about PRD/PDR documentation requirements for feature requests and enhancements.
+
+**Usage**:
+```yaml
+jobs:
+  prd-reminder:
+    permissions:
+      issues: write
+    uses: maxrantil/.github/.github/workflows/issue-prd-reminder-reusable.yml@master
+    with:
+      prd_location_path: 'docs/implementation/'
+      required_for_labels: 'enhancement,feature'
+```
+
+**Inputs**:
+- `prd_location_path`: Path where PRD/PDR documents should be stored (default: `docs/implementation/`)
+- `required_for_labels`: Comma-separated list of labels that trigger reminder (default: `enhancement,feature`)
+
+**Behavior**:
+- Only triggers for issues with specified labels (enhancement, feature, etc.)
+- Skips if issue already mentions PRD/PDR
+- Posts comprehensive workflow reminder with:
+  - PRD requirements and review process
+  - PDR requirements and agent validation steps
+  - Complete workflow diagram (Idea → PRD → PDR → Implementation)
+- Does not fail workflow (informational only)
+
+### Issue Auto-Labeling
+
+**File**: `.github/workflows/issue-auto-label-reusable.yml`
+
+Automatically applies relevant labels based on issue content analysis.
+
+**Usage**:
+```yaml
+jobs:
+  auto-label:
+    permissions:
+      issues: write
+    uses: maxrantil/.github/.github/workflows/issue-auto-label-reusable.yml@master
+    with:
+      enable_comment: true
+```
+
+**Inputs**:
+- `enable_comment`: Whether to post a comment explaining applied labels (default: `true`)
+
+**Behavior**:
+- Analyzes issue title and body for keywords
+- Applies relevant labels:
+  - `bug` - Error, crash, failure, broken
+  - `enhancement` - Feature, new, implement, improve
+  - `documentation` - Docs, readme, guide
+  - `security` - Vulnerability, exploit, CVE
+  - `performance` - Slow, optimize, latency
+  - `testing` - Test, coverage, unit test
+  - `refactoring` - Refactor, cleanup, technical debt
+  - `ci-cd` - Pipeline, workflow, GitHub Actions
+  - `priority: high` - Urgent, critical, blocker (from title)
+  - `priority: medium` - Important, soon
+  - `question` - Contains question marks or "how to"
+- Optionally posts comment listing applied labels
+- Never fails workflow (labeling is informational)
+
+### Complete Issue Validation Example
+
+Combine all 4 issue workflows for comprehensive validation:
+
+```yaml
+name: Issue Validation
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  ai-attribution-check:
+    name: Check AI Attribution
+    uses: maxrantil/.github/.github/workflows/issue-ai-attribution-check-reusable.yml@master
+    with:
+      fail_on_attribution: true
+
+  format-check:
+    name: Check Format
+    uses: maxrantil/.github/.github/workflows/issue-format-check-reusable.yml@master
+    with:
+      min_body_length: 20
+      fail_on_problems: true
+
+  prd-reminder:
+    name: PRD/PDR Reminder
+    uses: maxrantil/.github/.github/workflows/issue-prd-reminder-reusable.yml@master
+    with:
+      prd_location_path: 'docs/implementation/'
+      required_for_labels: 'enhancement,feature'
+
+  auto-label:
+    name: Auto-Label
+    uses: maxrantil/.github/.github/workflows/issue-auto-label-reusable.yml@master
+    with:
+      enable_comment: true
+```
+
+**Note**: Issue workflows require `permissions: issues: write` in the calling workflow.
+
 ## Workflow Templates
 
 Templates appear in GitHub's "Actions" → "New workflow" interface.
@@ -322,15 +496,22 @@ jobs:
 
 ```
 .github/
-├── workflows/                      # Reusable workflows
-│   ├── python-test-reusable.yml
-│   ├── shell-quality-reusable.yml
-│   ├── conventional-commit-check-reusable.yml
-│   ├── session-handoff-check-reusable.yml
-│   ├── block-ai-attribution-reusable.yml
-│   ├── pr-title-check-reusable.yml
-│   ├── protect-master-reusable.yml
-│   └── pre-commit-check-reusable.yml
+├── .github/
+│   └── workflows/                  # Reusable workflows
+│       ├── Phase 1: PR Validation
+│       ├── python-test-reusable.yml
+│       ├── shell-quality-reusable.yml
+│       ├── conventional-commit-check-reusable.yml
+│       ├── session-handoff-check-reusable.yml
+│       ├── block-ai-attribution-reusable.yml
+│       ├── pr-title-check-reusable.yml
+│       ├── protect-master-reusable.yml
+│       ├── pre-commit-check-reusable.yml
+│       ├── Phase 2: Issue Validation
+│       ├── issue-ai-attribution-check-reusable.yml
+│       ├── issue-format-check-reusable.yml
+│       ├── issue-prd-reminder-reusable.yml
+│       └── issue-auto-label-reusable.yml
 ├── workflow-templates/             # Templates for GitHub UI
 │   ├── python-ci.yml
 │   ├── python-ci.properties.json
@@ -347,6 +528,8 @@ jobs:
 │       ├── github-pr-template.md
 │       ├── github-commit-template.md
 │       └── WRITING_STYLE.md
+├── profile/
+│   └── README.md                   # GitHub profile showcase
 ├── CLAUDE.md                       # Development guidelines
 └── README.md                       # This file
 ```
