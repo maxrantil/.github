@@ -1,0 +1,130 @@
+# ABOUTME: Reusable workflow to remind about PRD/PDR requirements for feature requests
+# This workflow automatically posts guidance about required documentation (PRD/PDR) when
+# issues are labeled as features/enhancements, helping maintain consistent development workflow.
+
+name: Issue PRD/PDR Reminder (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      prd_location_path:
+        description: 'Path where PRD/PDR documents should be stored'
+        required: false
+        type: string
+        default: 'docs/implementation/'
+      required_for_labels:
+        description: 'Comma-separated list of labels that trigger PRD/PDR reminder'
+        required: false
+        type: string
+        default: 'enhancement,feature'
+
+jobs:
+  check-prd-requirement:
+    name: Check PRD/PDR Requirement
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check if reminder should be posted
+        id: should-remind
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const issueLabels = issue.labels.map(l => l.name.toLowerCase());
+            const requiredLabels = '${{ inputs.required_for_labels }}'.toLowerCase().split(',').map(s => s.trim());
+
+            // Check if issue has any of the required labels
+            const hasRequiredLabel = requiredLabels.some(label => issueLabels.includes(label));
+
+            if (!hasRequiredLabel) {
+              console.log('ℹ️ Issue does not have required labels for PRD/PDR reminder');
+              core.setOutput('should_remind', 'false');
+              return;
+            }
+
+            const body = issue.body || '';
+            const hasPRDMention = /PRD|PDR|Product Requirements|Product Design/i.test(body);
+
+            if (hasPRDMention) {
+              console.log('✅ Issue already mentions PRD/PDR workflow');
+              core.setOutput('should_remind', 'false');
+            } else {
+              console.log('📋 Issue needs PRD/PDR reminder');
+              core.setOutput('should_remind', 'true');
+            }
+
+      - name: Post PRD/PDR reminder
+        if: steps.should-remind.outputs.should_remind == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const prdPath = '${{ inputs.prd_location_path }}';
+
+            const comment = `📋 **Feature Request Workflow Reminder**
+
+            This issue is labeled as a feature/enhancement. Per **CLAUDE.md Section 1**, feature requests require:
+
+            ## Required Documentation:
+
+            ### 1. PRD (Product Requirements Document)
+            **Required for**: New features or significant UX changes
+            **Location**: \`${prdPath}PRD-[name]-[YYYY-MM-DD].md\`
+            **Must include**:
+            - Problem statement and user needs
+            - Success criteria
+            - User stories and acceptance criteria
+            - Stakeholder requirements
+
+            **Review process**:
+            1. Create PRD
+            2. Agent review (general-purpose-agent)
+            3. Stakeholder approval
+            4. **Doctor Hubert final approval** ✅
+
+            ### 2. PDR (Product Design Document)
+            **Required after**: PRD approval
+            **Location**: \`${prdPath}PDR-[name]-[YYYY-MM-DD].md\`
+            **Must include**:
+            - Technical architecture
+            - Implementation approach
+            - Security considerations
+            - Performance requirements
+            - Test strategy
+
+            **Review process**:
+            1. Create PDR
+            2. Agent validation (6 core agents):
+               - architecture-designer
+               - security-validator
+               - performance-optimizer
+               - test-automation-qa
+               - code-quality-analyzer
+               - documentation-knowledge-manager
+            3. Tech review
+            4. **Doctor Hubert final approval** ✅
+
+            ## Workflow:
+            \`\`\`
+            💡 Feature Idea (this issue)
+              ↓
+            📋 PRD → Review → Approval
+              ↓
+            🏗️ PDR → Agent Validation → Approval
+              ↓
+            ⚡ Implementation → PR → Merge
+            \`\`\`
+
+            **Next Step**: If this is a significant feature, please create a PRD document first or update this issue to reference an existing PRD.
+
+            If this is a small enhancement that doesn't require full PRD/PDR, please add a comment explaining why.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: comment
+            });
+
+            console.log('✅ PRD/PDR reminder posted');
