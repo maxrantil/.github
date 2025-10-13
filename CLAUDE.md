@@ -52,15 +52,27 @@
 - **Test workflow changes** in a sandbox repository BEFORE merging
 - **Document breaking changes** clearly in PR and CHANGELOG
 - Make atomic commits (one logical change per commit)
+- **Commit cleanup**: Draft PRs allow messy commits during iteration (fixups, typos, CI fixes)
 - **NEVER use `--no-verify`** to bypass hooks
 - **NEVER include co-author or tool attribution**
+
+**Automated Commit Quality Check**:
+- `commit-quality-check-reusable.yml` analyzes commits automatically
+- Detects fixup patterns: `fixup`, `wip:`, `oops`, `typo`, `ci `, `lint`
+- Posts comment with ready-to-run cleanup script
+- Provides three options: script, manual rebase, or squash-on-merge
+- **Read-only**: Never modifies commits (Phase 1 - guidance only)
 
 #### **4. Review Phase**
 
 - **Pull requests** for all changes (draft early, ready when complete)
 - Use commit/PR messages like `Fixes #123` for auto-linking
 - **Include migration guide** if workflows change
-- Squash only when merging to `master`
+- **Commit cleanup before merge**:
+  - Run provided cleanup script from workflow comment (if suggested)
+  - OR use GitHub's "Squash and merge" button
+  - OR keep commits if they're already clean
+- Squash only when merging to `master` (commits should be clean by this point)
 
 #### **5. Completion Phase**
 

@@ -187,6 +187,44 @@ jobs:
 - `base-branch`: Base branch to compare for changed files (default: `master`)
 - `run-on-all-files`: Run on all files instead of just changed files (default: `false`)
 
+### Commit Quality Check
+
+**File**: `.github/workflows/commit-quality-check-reusable.yml`
+
+Analyzes commit history for fixup patterns and provides cleanup guidance without modifying commits.
+
+**Usage**:
+```yaml
+jobs:
+  commit-quality:
+    uses: maxrantil/.github/.github/workflows/commit-quality-check-reusable.yml@main
+    with:
+      base-branch: 'master'
+      fail-on-fixups: false
+      suggest-cleanup: true
+```
+
+**Inputs**:
+- `base-branch`: Base branch to compare against (default: `master`)
+- `fail-on-fixups`: Fail workflow if fixup commits detected (default: `false`)
+- `suggest-cleanup`: Post comment with cleanup suggestions (default: `true`)
+- `cleanup-score-threshold`: Minimum score to suggest cleanup: `LOW`, `MEDIUM`, `HIGH` (default: `MEDIUM`)
+
+**Behavior**:
+- Detects fixup patterns: `fixup`, `wip:`, `tmp:`, `oops`, `typo`, `ci `, `lint `, `pre-commit`
+- Calculates cleanup benefit score based on commit count and fixup ratio
+- Generates ready-to-run cleanup script in PR comment
+- Provides three options: automated script, manual rebase, or squash-on-merge
+- **Read-only**: Never modifies commits (validation only)
+
+**Cleanup Benefit Scores**:
+- **HIGH**: >10 commits with >3 fixups - strong cleanup benefit
+- **MEDIUM**: >1 fixup - moderate cleanup benefit
+- **LOW**: 0-1 fixups - minimal cleanup benefit
+
+**Phase 1** (Current): Validation-only workflow provides guidance
+**Phase 2** (Future): Optional comment-triggered automation (`/cleanup-commits` command)
+
 ## Issue Validation Workflows
 
 Phase 2 workflows for automated issue validation, labeling, and policy enforcement.
@@ -507,6 +545,7 @@ jobs:
 │       ├── pr-title-check-reusable.yml
 │       ├── protect-master-reusable.yml
 │       ├── pre-commit-check-reusable.yml
+│       ├── commit-quality-check-reusable.yml
 │       ├── Phase 2: Issue Validation
 │       ├── issue-ai-attribution-check-reusable.yml
 │       ├── issue-format-check-reusable.yml
@@ -531,6 +570,7 @@ jobs:
 ├── profile/
 │   └── README.md                   # GitHub profile showcase
 ├── CLAUDE.md                       # Development guidelines
+├── PDR-commit-cleanup-workflow-2025-10-10.md  # Phase 1 design doc
 └── README.md                       # This file
 ```
 

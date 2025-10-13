@@ -1,0 +1,282 @@
+# ABOUTME: Analyzes commit history and provides cleanup guidance without modifying commits
+
+name: Commit Quality Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      base-branch:
+        description: 'Base branch to compare against'
+        required: false
+        type: string
+        default: 'master'
+      fail-on-fixups:
+        description: 'Fail workflow if fixup commits detected'
+        required: false
+        type: boolean
+        default: false
+      suggest-cleanup:
+        description: 'Post comment with cleanup suggestions'
+        required: false
+        type: boolean
+        default: true
+      cleanup-score-threshold:
+        description: 'Minimum score to suggest cleanup (LOW, MEDIUM, HIGH)'
+        required: false
+        type: string
+        default: 'MEDIUM'
+
+jobs:
+  analyze-commits:
+    name: Analyze Commit Quality
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyze commit history
+        id: analyze
+        run: |
+          BASE_BRANCH="origin/${{ inputs.base-branch }}"
+
+          echo "🔍 Analyzing commits from $BASE_BRANCH..HEAD"
+
+          # Get all commits in PR
+          COMMITS=$(git log $BASE_BRANCH..HEAD --oneline)
+          COMMIT_COUNT=$(echo "$COMMITS" | wc -l)
+
+          if [ "$COMMIT_COUNT" -eq 0 ]; then
+            echo "ℹ️ No commits found in PR"
+            echo "has_commits=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "has_commits=true" >> $GITHUB_OUTPUT
+          echo "📊 Found $COMMIT_COUNT commits"
+
+          # Count fixup patterns
+          FIXUP_COUNT=$(echo "$COMMITS" | grep -ciE "^[a-f0-9]+ (fixup|fix:|wip:|tmp:|oops|typo)" || echo "0")
+          echo "🔧 Fixup commits: $FIXUP_COUNT"
+
+          # Count CI fix patterns
+          CI_FIX_COUNT=$(echo "$COMMITS" | grep -ciE "(ci |lint |pre-commit)" || echo "0")
+          echo "🤖 CI fix commits: $CI_FIX_COUNT"
+
+          # Total cleanup candidates
+          TOTAL_CLEANUP=$((FIXUP_COUNT + CI_FIX_COUNT))
+          HAS_FIXUPS=$([ "$TOTAL_CLEANUP" -gt 0 ] && echo "true" || echo "false")
+
+          # Calculate cleanup benefit score
+          if [ "$COMMIT_COUNT" -gt 10 ] && [ "$TOTAL_CLEANUP" -gt 3 ]; then
+            CLEANUP_SCORE="HIGH"
+          elif [ "$TOTAL_CLEANUP" -gt 1 ]; then
+            CLEANUP_SCORE="MEDIUM"
+          else
+            CLEANUP_SCORE="LOW"
+          fi
+
+          echo "cleanup_score=$CLEANUP_SCORE" >> $GITHUB_OUTPUT
+          echo "📈 Cleanup benefit: $CLEANUP_SCORE"
+
+          # Export for next steps
+          echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+          echo "fixup_count=$FIXUP_COUNT" >> $GITHUB_OUTPUT
+          echo "ci_fix_count=$CI_FIX_COUNT" >> $GITHUB_OUTPUT
+          echo "has_fixups=$HAS_FIXUPS" >> $GITHUB_OUTPUT
+
+      - name: Generate cleanup script
+        if: steps.analyze.outputs.has_fixups == 'true'
+        run: |
+          cat > cleanup-script.sh << 'EOFSCRIPT'
+#!/bin/bash
+# ABOUTME: Commit cleanup script - squashes fixup commits into clean history
+set -e
+
+BRANCH=$(git branch --show-current)
+BASE_BRANCH="origin/${{ inputs.base-branch }}"
+
+echo "🔍 Current branch: $BRANCH"
+echo "🔍 Base branch: $BASE_BRANCH"
+echo ""
+
+# Show commits to be squashed
+echo "📋 Commits to be squashed:"
+git log --oneline $BASE_BRANCH..HEAD
+echo ""
+
+# Confirm
+read -p "Proceed with cleanup? (y/N) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Aborted"
+    exit 1
+fi
+
+# Get first commit message (preserve the main one)
+FIRST_MSG=$(git log $BASE_BRANCH..HEAD --reverse --format=%s | head -1)
+
+echo "🧹 Squashing commits..."
+
+# Soft reset to base
+git reset --soft $BASE_BRANCH
+
+# Create single clean commit
+git commit -m "$FIRST_MSG"
+
+echo ""
+echo "✅ Cleanup complete!"
+echo "📊 Result: $(git log --oneline $BASE_BRANCH..HEAD)"
+echo ""
+echo "⚠️  Next step: Force push with safety check"
+echo "   git push --force-with-lease origin $BRANCH"
+EOFSCRIPT
+
+          chmod +x cleanup-script.sh
+          echo "✅ Cleanup script generated"
+
+      - name: Check cleanup threshold
+        id: threshold
+        if: steps.analyze.outputs.has_fixups == 'true'
+        run: |
+          SCORE="${{ steps.analyze.outputs.cleanup_score }}"
+          THRESHOLD="${{ inputs.cleanup-score-threshold }}"
+
+          case "$THRESHOLD" in
+            LOW)
+              SHOULD_SUGGEST=true
+              ;;
+            MEDIUM)
+              if [ "$SCORE" = "MEDIUM" ] || [ "$SCORE" = "HIGH" ]; then
+                SHOULD_SUGGEST=true
+              else
+                SHOULD_SUGGEST=false
+              fi
+              ;;
+            HIGH)
+              if [ "$SCORE" = "HIGH" ]; then
+                SHOULD_SUGGEST=true
+              else
+                SHOULD_SUGGEST=false
+              fi
+              ;;
+            *)
+              SHOULD_SUGGEST=true
+              ;;
+          esac
+
+          echo "should_suggest=$SHOULD_SUGGEST" >> $GITHUB_OUTPUT
+
+      - name: Post cleanup suggestion
+        if: |
+          steps.analyze.outputs.has_fixups == 'true' &&
+          inputs.suggest-cleanup == true &&
+          steps.threshold.outputs.should_suggest == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const commitCount = '${{ steps.analyze.outputs.commit_count }}';
+            const fixupCount = '${{ steps.analyze.outputs.fixup_count }}';
+            const cifixCount = '${{ steps.analyze.outputs.ci_fix_count }}';
+            const cleanupScore = '${{ steps.analyze.outputs.cleanup_score }}';
+
+            const script = fs.existsSync('cleanup-script.sh')
+              ? fs.readFileSync('cleanup-script.sh', 'utf8')
+              : '# Script generation failed';
+
+            const comment = `## 🧹 Commit Cleanup Opportunity
+
+**Analysis**:
+- Total commits: ${commitCount}
+- Fixup commits: ${fixupCount}
+- CI fix commits: ${cifixCount}
+- Cleanup benefit: **${cleanupScore}**
+
+**Recommendation**: Consider cleaning up commits before merge for better git history.
+
+### Option 1: Automated Cleanup Script
+
+Run this script locally to squash fixup commits:
+
+\`\`\`bash
+${script}
+\`\`\`
+
+**What it does**:
+1. Shows all commits to be squashed
+2. Asks for confirmation
+3. Soft resets to base branch
+4. Creates single commit with first commit message
+5. Instructs you to force-push with \`--force-with-lease\`
+
+### Option 2: Manual Interactive Rebase
+
+For more control over commit messages:
+
+\`\`\`bash
+# Interactive rebase
+git rebase -i origin/${{ inputs.base-branch }}
+
+# In the editor:
+# - Change 'pick' to 'squash' for fixup commits
+# - Edit commit messages as needed
+# - Save and close
+
+# Force push when done
+git push --force-with-lease
+\`\`\`
+
+### Option 3: Merge As-Is
+
+Use GitHub's "Squash and merge" button - all commits will be combined automatically when merging.
+
+---
+
+*This is guidance only - all options are valid. Choose what fits your workflow.*
+
+*Phase 1: Validation-only workflow (read-only analysis). Phase 2 automation (\`/cleanup-commits\` command) coming soon.*
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+      - name: Fail if required
+        if: steps.analyze.outputs.has_fixups == 'true' && inputs.fail-on-fixups == true
+        run: |
+          echo "❌ Fixup commits detected and fail-on-fixups is enabled"
+          echo "Clean up commits before merge or disable this check"
+          exit 1
+
+      - name: Success
+        if: steps.analyze.outputs.has_fixups == 'false' && steps.analyze.outputs.has_commits == 'true'
+        run: |
+          echo "✅ No fixup commits detected - commit history looks clean"
+          echo "✅ Good job maintaining clean commit hygiene!"
+
+      - name: Summary
+        if: always() && steps.analyze.outputs.has_commits == 'true'
+        run: |
+          echo "### Commit Quality Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total commits**: ${{ steps.analyze.outputs.commit_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Fixup commits**: ${{ steps.analyze.outputs.fixup_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CI fix commits**: ${{ steps.analyze.outputs.ci_fix_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cleanup score**: ${{ steps.analyze.outputs.cleanup_score }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.analyze.outputs.has_fixups }}" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **Suggestion**: Consider cleaning up fixup commits for better history" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Result**: Clean commit history" >> $GITHUB_STEP_SUMMARY
+          fi

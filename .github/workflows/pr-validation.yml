@@ -1,0 +1,43 @@
+# ABOUTME: PR validation workflows for .github repository (dogfooding our own reusable workflows)
+
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, edited, synchronize]
+
+jobs:
+  pr-title:
+    name: Check PR Title
+    uses: ./.github/workflows/pr-title-check-reusable.yml
+    with:
+      allowed-types: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build'
+
+  commit-format:
+    name: Check Commit Format
+    uses: ./.github/workflows/conventional-commit-check-reusable.yml
+    with:
+      base-branch: 'master'
+      allowed-types: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build'
+
+  ai-attribution:
+    name: Block AI Attribution
+    uses: ./.github/workflows/block-ai-attribution-reusable.yml
+    with:
+      base-branch: 'master'
+
+  commit-quality:
+    name: Commit Quality Check
+    uses: ./.github/workflows/commit-quality-check-reusable.yml
+    with:
+      base-branch: 'master'
+      fail-on-fixups: false
+      suggest-cleanup: true
+      cleanup-score-threshold: 'MEDIUM'
+
+  session-handoff:
+    name: Verify Session Handoff
+    uses: ./.github/workflows/session-handoff-check-reusable.yml
+    with:
+      base-branch: 'master'
