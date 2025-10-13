@@ -90,60 +90,6 @@ jobs:
           echo "ci_fix_count=$CI_FIX_COUNT" >> $GITHUB_OUTPUT
           echo "has_fixups=$HAS_FIXUPS" >> $GITHUB_OUTPUT
 
-      - name: Generate cleanup script
-        if: steps.analyze.outputs.has_fixups == 'true'
-        env:
-          BASE_BRANCH_NAME: ${{ inputs.base-branch }}
-        run: |
-          # Generate cleanup script with proper escaping
-          cat > cleanup-script.sh <<'EOF'
-#!/bin/bash
-# ABOUTME: Commit cleanup script - squashes fixup commits into clean history
-set -e
-
-BRANCH=$(git branch --show-current)
-BASE_BRANCH="origin/BASE_BRANCH_PLACEHOLDER"
-
-echo "🔍 Current branch: $BRANCH"
-echo "🔍 Base branch: $BASE_BRANCH"
-echo ""
-
-# Show commits to be squashed
-echo "📋 Commits to be squashed:"
-git log --oneline $BASE_BRANCH..HEAD
-echo ""
-
-# Confirm
-read -p "Proceed with cleanup? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Aborted"
-    exit 1
-fi
-
-# Get first commit message (preserve the main one)
-FIRST_MSG=$(git log $BASE_BRANCH..HEAD --reverse --format=%s | head -1)
-
-echo "🧹 Squashing commits..."
-
-# Soft reset to base
-git reset --soft $BASE_BRANCH
-
-# Create single clean commit
-git commit -m "$FIRST_MSG"
-
-echo ""
-echo "✅ Cleanup complete!"
-echo "📊 Result: $(git log --oneline $BASE_BRANCH..HEAD)"
-echo ""
-echo "⚠️  Next step: Force push with safety check"
-echo "   git push --force-with-lease origin $BRANCH"
-EOF
-          # Replace placeholder with actual branch name
-          sed -i "s/BASE_BRANCH_PLACEHOLDER/${BASE_BRANCH_NAME}/g" cleanup-script.sh
-          chmod +x cleanup-script.sh
-          echo "✅ Cleanup script generated"
-
       - name: Check cleanup threshold
         id: threshold
         if: steps.analyze.outputs.has_fixups == 'true'
@@ -190,9 +136,7 @@ EOF
             const cifixCount = '${{ steps.analyze.outputs.ci_fix_count }}';
             const cleanupScore = '${{ steps.analyze.outputs.cleanup_score }}';
 
-            const script = fs.existsSync('cleanup-script.sh')
-              ? fs.readFileSync('cleanup-script.sh', 'utf8')
-              : '# Script generation failed';
+            const baseBranch = 'origin/${{ inputs.base-branch }}';
 
             const comment = `## 🧹 Commit Cleanup Opportunity
 
@@ -204,28 +148,29 @@ EOF
 
 **Recommendation**: Consider cleaning up commits before merge for better git history.
 
-### Option 1: Automated Cleanup Script
+### Option 1: Quick Squash (Copy-Paste)
 
-Run this script locally to squash fixup commits:
+Squash all commits into one clean commit:
 
 \`\`\`bash
-${script}
+# Save first commit message
+FIRST_MSG=$(git log ${baseBranch}..HEAD --reverse --format=%s | head -1)
+
+# Squash all commits
+git reset --soft ${baseBranch}
+git commit -m "$FIRST_MSG"
+
+# Force push (safe - fails if remote changed)
+git push --force-with-lease
 \`\`\`
 
-**What it does**:
-1. Shows all commits to be squashed
-2. Asks for confirmation
-3. Soft resets to base branch
-4. Creates single commit with first commit message
-5. Instructs you to force-push with \`--force-with-lease\`
-
-### Option 2: Manual Interactive Rebase
+### Option 2: Interactive Rebase (More Control)
 
 For more control over commit messages:
 
 \`\`\`bash
 # Interactive rebase
-git rebase -i origin/${{ inputs.base-branch }}
+git rebase -i ${baseBranch}
 
 # In the editor:
 # - Change 'pick' to 'squash' for fixup commits
@@ -236,9 +181,9 @@ git rebase -i origin/${{ inputs.base-branch }}
 git push --force-with-lease
 \`\`\`
 
-### Option 3: Merge As-Is
+### Option 3: Squash on Merge
 
-Use GitHub's "Squash and merge" button - all commits will be combined automatically when merging.
+Use GitHub's **"Squash and merge"** button - all commits will be combined automatically when merging.
 
 ---
 
