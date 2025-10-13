@@ -1,0 +1,24 @@
+# ABOUTME: Issue validation workflows for .github repository (dogfooding our own reusable workflows)
+
+name: Issue Validation
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  ai-attribution:
+    name: Block AI Attribution in Issues
+    uses: ./.github/workflows/issue-ai-attribution-check-reusable.yml
+
+  format-check:
+    name: Check Issue Format
+    uses: ./.github/workflows/issue-format-check-reusable.yml
+
+  prd-reminder:
+    name: PRD/PDR Reminder
+    uses: ./.github/workflows/issue-prd-reminder-reusable.yml
+
+  auto-label:
+    name: Auto-label Issues
+    uses: ./.github/workflows/issue-auto-label-reusable.yml
