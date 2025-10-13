@@ -1,0 +1,14 @@
+# ABOUTME: Push validation workflows for .github repository (protect master branch)
+
+name: Push Validation
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  protect-master:
+    name: Protect Master Branch
+    uses: ./.github/workflows/protect-master-reusable.yml
+    with:
+      protected-branch: 'master'
