@@ -130,67 +130,66 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
             const commitCount = '${{ steps.analyze.outputs.commit_count }}';
             const fixupCount = '${{ steps.analyze.outputs.fixup_count }}';
             const cifixCount = '${{ steps.analyze.outputs.ci_fix_count }}';
             const cleanupScore = '${{ steps.analyze.outputs.cleanup_score }}';
-
             const baseBranch = 'origin/${{ inputs.base-branch }}';
 
-            const comment = `## 🧹 Commit Cleanup Opportunity
-
-**Analysis**:
-- Total commits: ${commitCount}
-- Fixup commits: ${fixupCount}
-- CI fix commits: ${cifixCount}
-- Cleanup benefit: **${cleanupScore}**
-
-**Recommendation**: Consider cleaning up commits before merge for better git history.
-
-### Option 1: Quick Squash (Copy-Paste)
-
-Squash all commits into one clean commit:
-
-\`\`\`bash
-# Save first commit message
-FIRST_MSG=$(git log ${baseBranch}..HEAD --reverse --format=%s | head -1)
-
-# Squash all commits
-git reset --soft ${baseBranch}
-git commit -m "$FIRST_MSG"
-
-# Force push (safe - fails if remote changed)
-git push --force-with-lease
-\`\`\`
-
-### Option 2: Interactive Rebase (More Control)
-
-For more control over commit messages:
-
-\`\`\`bash
-# Interactive rebase
-git rebase -i ${baseBranch}
-
-# In the editor:
-# - Change 'pick' to 'squash' for fixup commits
-# - Edit commit messages as needed
-# - Save and close
-
-# Force push when done
-git push --force-with-lease
-\`\`\`
-
-### Option 3: Squash on Merge
-
-Use GitHub's **"Squash and merge"** button - all commits will be combined automatically when merging.
-
----
-
-*This is guidance only - all options are valid. Choose what fits your workflow.*
-
-*Phase 1: Validation-only workflow (read-only analysis). Phase 2 automation (\`/cleanup-commits\` command) coming soon.*
-            `;
+            const comment = [
+              '## 🧹 Commit Cleanup Opportunity',
+              '',
+              '**Analysis**:',
+              `- Total commits: ${commitCount}`,
+              `- Fixup commits: ${fixupCount}`,
+              `- CI fix commits: ${cifixCount}`,
+              `- Cleanup benefit: **${cleanupScore}**`,
+              '',
+              '**Recommendation**: Consider cleaning up commits before merge for better git history.',
+              '',
+              '### Option 1: Quick Squash (Copy-Paste)',
+              '',
+              'Squash all commits into one clean commit:',
+              '',
+              '```bash',
+              '# Save first commit message',
+              `FIRST_MSG=$(git log ${baseBranch}..HEAD --reverse --format=%s | head -1)`,
+              '',
+              '# Squash all commits',
+              `git reset --soft ${baseBranch}`,
+              'git commit -m "$FIRST_MSG"',
+              '',
+              '# Force push (safe - fails if remote changed)',
+              'git push --force-with-lease',
+              '```',
+              '',
+              '### Option 2: Interactive Rebase (More Control)',
+              '',
+              'For more control over commit messages:',
+              '',
+              '```bash',
+              '# Interactive rebase',
+              `git rebase -i ${baseBranch}`,
+              '',
+              '# In the editor:',
+              '# - Change \'pick\' to \'squash\' for fixup commits',
+              '# - Edit commit messages as needed',
+              '# - Save and close',
+              '',
+              '# Force push when done',
+              'git push --force-with-lease',
+              '```',
+              '',
+              '### Option 3: Squash on Merge',
+              '',
+              'Use GitHub\'s **"Squash and merge"** button - all commits will be combined automatically when merging.',
+              '',
+              '---',
+              '',
+              '*This is guidance only - all options are valid. Choose what fits your workflow.*',
+              '',
+              '*Phase 1: Validation-only workflow (read-only analysis). Phase 2 automation (`/cleanup-commits` command) coming soon.*'
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
