@@ -92,49 +92,51 @@ jobs:
 
       - name: Generate cleanup script
         if: steps.analyze.outputs.has_fixups == 'true'
+        env:
+          BASE_BRANCH_NAME: ${{ inputs.base-branch }}
         run: |
-          cat > cleanup-script.sh << 'EOFSCRIPT'
+          cat > cleanup-script.sh << EOFSCRIPT
 #!/bin/bash
 # ABOUTME: Commit cleanup script - squashes fixup commits into clean history
 set -e
 
-BRANCH=$(git branch --show-current)
-BASE_BRANCH="origin/${{ inputs.base-branch }}"
+BRANCH=\$(git branch --show-current)
+BASE_BRANCH="origin/${BASE_BRANCH_NAME}"
 
-echo "🔍 Current branch: $BRANCH"
-echo "🔍 Base branch: $BASE_BRANCH"
+echo "🔍 Current branch: \$BRANCH"
+echo "🔍 Base branch: \$BASE_BRANCH"
 echo ""
 
 # Show commits to be squashed
 echo "📋 Commits to be squashed:"
-git log --oneline $BASE_BRANCH..HEAD
+git log --oneline \$BASE_BRANCH..HEAD
 echo ""
 
 # Confirm
 read -p "Proceed with cleanup? (y/N) " -n 1 -r
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [[ ! \$REPLY =~ ^[Yy]\$ ]]; then
     echo "❌ Aborted"
     exit 1
 fi
 
 # Get first commit message (preserve the main one)
-FIRST_MSG=$(git log $BASE_BRANCH..HEAD --reverse --format=%s | head -1)
+FIRST_MSG=\$(git log \$BASE_BRANCH..HEAD --reverse --format=%s | head -1)
 
 echo "🧹 Squashing commits..."
 
 # Soft reset to base
-git reset --soft $BASE_BRANCH
+git reset --soft \$BASE_BRANCH
 
 # Create single clean commit
-git commit -m "$FIRST_MSG"
+git commit -m "\$FIRST_MSG"
 
 echo ""
 echo "✅ Cleanup complete!"
-echo "📊 Result: $(git log --oneline $BASE_BRANCH..HEAD)"
+echo "📊 Result: \$(git log --oneline \$BASE_BRANCH..HEAD)"
 echo ""
 echo "⚠️  Next step: Force push with safety check"
-echo "   git push --force-with-lease origin $BRANCH"
+echo "   git push --force-with-lease origin \$BRANCH"
 EOFSCRIPT
 
           chmod +x cleanup-script.sh
