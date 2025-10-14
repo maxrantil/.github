@@ -29,25 +29,70 @@ jobs:
             const title = issue.title || '';
             const combined = title + '\n' + body;
 
-            // Pattern to detect AI tool attribution and agent mentions
-            const aiPatterns = [
-              /Co-authored-by:.*(Claude|GPT|ChatGPT|Copilot|Gemini|Bard|AI Assistant)/i,
-              /Generated with.*(Claude|AI|GPT|ChatGPT|Copilot)/i,
-              /claude\.com\/claude-code/i,
-              /Created by (Claude|ChatGPT|GPT|Copilot|AI)/i,
-              /Written by (Claude|ChatGPT|GPT|Copilot|AI)/i,
-              /(Reviewed by|Validated by|Approved by|Checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer|documentation-knowledge-manager|ux-accessibility-i18n-agent|devops-deployment-agent|general-purpose-agent)/i,
-              /agent (review|validation|approval|check)/i,
-            ];
+            // Normalize text to catch bypasses (leetspeak, spacing)
+            function normalize(text) {
+              text = text.toLowerCase();
+              // Replace leetspeak numbers with letters
+              const replacements = {'1': 'l', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'};
+              for (const [num, letter] of Object.entries(replacements)) {
+                text = text.replaceAll(num, letter);
+              }
+              // Remove spaces, hyphens, underscores
+              return text.replace(/[\s_-]/g, '');
+            }
 
+            const normalized = normalize(combined);
             let foundAttribution = false;
             let matchedPattern = '';
 
-            for (const pattern of aiPatterns) {
-              if (pattern.test(combined)) {
-                foundAttribution = true;
-                matchedPattern = pattern.toString();
-                break;
+            // Check AI tool names with normalization (catches leetspeak/spacing)
+            const aiTools = ['claude', 'gpt', 'chatgpt', 'copilot', 'gemini', 'bard'];
+            const attributionVerbs = ['coauthoredby', 'generatedwith', 'generatedby',
+                                      'createdby', 'writtenby', 'builtby', 'helpedby'];
+
+            for (const tool of aiTools) {
+              if (normalized.includes(tool)) {
+                // Check for attribution context
+                if (attributionVerbs.some(verb => normalized.includes(verb))) {
+                  foundAttribution = true;
+                  matchedPattern = `AI tool name: ${tool} (with normalization - catches leetspeak/spacing)`;
+                  break;
+                }
+              }
+            }
+
+            // Check explicit patterns in original text
+            if (!foundAttribution) {
+              const explicitPatterns = [
+                /claude\.com\/claude-code/i,
+                /(Reviewed by|Validated by|Approved by|Checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer)/i,
+                /agent (review|validation|approval|check)/i,
+                /🤖.*(Claude|AI|GPT)/i,
+              ];
+
+              for (const pattern of explicitPatterns) {
+                if (pattern.test(combined)) {
+                  foundAttribution = true;
+                  matchedPattern = pattern.toString();
+                  break;
+                }
+              }
+            }
+
+            // Check generic AI attribution patterns
+            if (!foundAttribution) {
+              const genericPatterns = [
+                /\b(with|by|using|via|from|thanks to)\s+(AI|artificial intelligence|chatbot|chat bot|language model|LLM)\b/i,
+                /\bAI\s+(assistance|help|support|tool)\b/i,
+                /\b(AI\s+)?assistant\s+(help|assistance)/i,
+              ];
+
+              for (const pattern of genericPatterns) {
+                if (pattern.test(combined)) {
+                  foundAttribution = true;
+                  matchedPattern = pattern.toString() + ' (generic AI attribution)';
+                  break;
+                }
               }
             }
 
@@ -57,6 +102,11 @@ jobs:
             This issue contains AI tool or agent attribution, which is against project policy.
 
             **Found pattern**: ${matchedPattern}
+
+            **Enhanced Detection**: This check now catches bypass attempts including:
+            - 🔍 Leetspeak: C1aude, GPT-4, Ch4tGP7, Cl4ud3
+            - 🔍 Spacing: C l a u d e, G P T - 4
+            - 🔍 Generic terms: AI assistance, chatbot help, LLM support
 
             **Policy**: Per CLAUDE.md Section 1, AI/agent attribution should NOT be in:
             - ❌ Issue descriptions

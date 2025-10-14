@@ -30,39 +30,79 @@ jobs:
             const blockAiTools = ${{ inputs.block-ai-tools }};
             const blockAgentMentions = ${{ inputs.block-agent-mentions }};
 
+            // Normalize text to catch bypasses (leetspeak, spacing)
+            function normalize(text) {
+              text = text.toLowerCase();
+              // Replace leetspeak numbers with letters
+              const replacements = {'1': 'l', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'};
+              for (const [num, letter] of Object.entries(replacements)) {
+                text = text.replaceAll(num, letter);
+              }
+              // Remove spaces, hyphens, underscores
+              return text.replace(/[\s_-]/g, '');
+            }
+
+            const normalized = normalize(prBody);
             let foundViolation = false;
             const violations = [];
 
-            console.log('🔍 Checking PR body for AI/agent attribution...');
+            console.log('🔍 Checking PR body for AI/agent attribution with bypass detection...');
             console.log('');
 
             if (blockAiTools) {
-              // Check for AI tool attribution
-              const aiToolPattern = /(Co-authored-by|Generated with|Created with|Built with|Written by).*(Claude|GPT|ChatGPT|Copilot|Gemini|Bard|AI Assistant)/i;
-              if (aiToolPattern.test(prBody)) {
-                violations.push('❌ ERROR: AI tool attribution detected in PR body!');
-                violations.push('Found AI tool name in attribution text');
-                foundViolation = true;
+              // Check AI tool names with normalization (catches leetspeak/spacing)
+              const aiTools = ['claude', 'gpt', 'chatgpt', 'copilot', 'gemini', 'bard'];
+              const attributionVerbs = ['coauthoredby', 'generatedwith', 'generatedby',
+                                        'createdby', 'writtenby', 'builtby', 'helpedby'];
+
+              for (const tool of aiTools) {
+                if (normalized.includes(tool)) {
+                  // Check for attribution context
+                  if (attributionVerbs.some(verb => normalized.includes(verb))) {
+                    violations.push('❌ ERROR: AI tool attribution detected in PR body!');
+                    violations.push(`  Found: ${tool} (with normalization - catches leetspeak/spacing)`);
+                    violations.push('  Examples blocked: C1aude, Cl4ud3, C l a u d e, GPT-4');
+                    foundViolation = true;
+                    break;
+                  }
+                }
               }
 
-              // Check for Claude Code specific attribution
-              if (prBody.includes('claude.com/claude-code')) {
+              // Check explicit patterns
+              if (!foundViolation && /claude\.com\/claude-code/i.test(prBody)) {
                 violations.push('❌ ERROR: Claude Code attribution link detected!');
                 violations.push('Found: claude.com/claude-code reference in PR body');
                 foundViolation = true;
               }
 
-              // Check for "Generated with Claude Code" emoji pattern
-              if (/🤖.*Generated with.*Claude Code/i.test(prBody)) {
-                violations.push('❌ ERROR: Claude Code generation attribution detected!');
-                violations.push('Found: 🤖 Generated with Claude Code pattern');
+              if (!foundViolation && /🤖.*(Claude|AI|GPT)/i.test(prBody)) {
+                violations.push('❌ ERROR: AI emoji attribution detected!');
+                violations.push('Found: 🤖 with AI tool reference');
                 foundViolation = true;
+              }
+
+              // Check generic AI attribution
+              if (!foundViolation) {
+                const genericPatterns = [
+                  /\b(with|by|using|via|from|thanks to)\s+(AI|artificial intelligence|chatbot|chat bot|language model|LLM)\b/i,
+                  /\bAI\s+(assistance|help|support|tool)\b/i,
+                  /\b(AI\s+)?assistant\s+(help|assistance)/i,
+                ];
+
+                for (const pattern of genericPatterns) {
+                  if (pattern.test(prBody)) {
+                    violations.push('❌ ERROR: Generic AI attribution detected in PR body!');
+                    violations.push('  Found: AI assistance, chatbot help, LLM support, etc.');
+                    foundViolation = true;
+                    break;
+                  }
+                }
               }
             }
 
-            if (blockAgentMentions) {
+            if (blockAgentMentions && !foundViolation) {
               // Check for agent mentions in PR body
-              const agentPattern = /(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer|documentation-knowledge-manager|ux-accessibility-i18n-agent|devops-deployment-agent|general-purpose-agent)/i;
+              const agentPattern = /(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer)/i;
               if (agentPattern.test(prBody)) {
                 violations.push('❌ ERROR: Agent attribution detected in PR body!');
                 violations.push('Found: Agent mention in PR description');
@@ -82,6 +122,11 @@ jobs:
               console.log('Please remove AI/agent attribution from PR body.');
               console.log('✅ Human co-authors are allowed and encouraged!');
               console.log('✅ Document agent validations in session handoff files instead.');
+              console.log('');
+              console.log('Note: Enhanced detection catches bypass attempts:');
+              console.log('  • Leetspeak: C1aude, GPT-4, Ch4tGP7, Cl4ud3');
+              console.log('  • Spacing: C l a u d e, G P T - 4');
+              console.log('  • Generic: AI assistance, chatbot help, LLM support');
               core.setFailed('AI/agent attribution found in PR body');
             } else {
               console.log('✅ No AI attribution markers found in PR body');

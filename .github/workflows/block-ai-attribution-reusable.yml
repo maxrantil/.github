@@ -29,62 +29,100 @@ jobs:
 
       - name: Check for AI attribution markers
         run: |
-          echo "🔍 Checking commits for AI/agent attribution..."
+          echo "🔍 Checking commits for AI/agent attribution with bypass detection..."
           echo ""
 
-          FOUND_VIOLATION=false
+          # Get commit messages
+          git log origin/${{ inputs.base-branch }}..HEAD --format=%B > /tmp/commit_messages.txt
 
-          if [[ "${{ inputs.block-ai-tools }}" == "true" ]]; then
-            # Check for AI tool attribution in Co-authored-by
-            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "Co-authored-by:.*(Claude|GPT|ChatGPT|Copilot|Gemini|Bard|AI)"; then
-              echo "❌ ERROR: AI tool attribution detected in Co-authored-by!"
-              echo "Found AI tool name in co-author field"
-              FOUND_VIOLATION=true
-            fi
+          # Use Python for advanced pattern matching with normalization
+          python3 <<'PYEOF'
+          import sys, re
 
-            # Check for "Generated with" messages
-            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "Generated with.*(Claude|AI|GPT|ChatGPT|Copilot)"; then
-              echo "❌ ERROR: AI generation attribution detected!"
-              echo "Found: Generated with [AI tool]"
-              FOUND_VIOLATION=true
-            fi
+          def normalize(text):
+              """Normalize text to catch bypasses (leetspeak, spacing)"""
+              text = text.lower()
+              # Replace leetspeak numbers with letters
+              replacements = {'1': 'l', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'}
+              for num, letter in replacements.items():
+                  text = text.replace(num, letter)
+              # Remove spaces, hyphens, underscores
+              return re.sub(r'[\s_-]', '', text)
 
-            # Check for Claude Code specific attribution
-            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eq "claude\.com/claude-code"; then
-              echo "❌ ERROR: Claude Code attribution link detected!"
-              echo "Found: claude.com/claude-code reference"
-              FOUND_VIOLATION=true
-            fi
-          fi
+          with open('/tmp/commit_messages.txt', 'r') as f:
+              commits = f.read()
 
-          if [[ "${{ inputs.block-agent-mentions }}" == "true" ]]; then
-            # Check for agent mentions (architecture-designer, security-validator, etc.)
-            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer|documentation-knowledge-manager|ux-accessibility-i18n-agent|devops-deployment-agent|general-purpose-agent)"; then
-              echo "❌ ERROR: Agent attribution detected in commit!"
-              echo "Found: Agent mention in commit message"
-              echo ""
-              echo "Policy: Agent validations should be documented in:"
-              echo "  ✅ Session handoff files"
-              echo "  ✅ Implementation documentation"
-              echo "  ✅ PRD/PDR documents"
-              echo "  ❌ NOT in commit messages"
-              FOUND_VIOLATION=true
-            fi
+          normalized = normalize(commits)
+          found_violation = False
+          violations = []
 
-            # Check for generic agent references
-            if git log origin/${{ inputs.base-branch }}..HEAD | grep -Eiq "agent (review|validation|approval|check)"; then
-              echo "❌ ERROR: Generic agent reference detected in commit!"
-              echo "Found: Reference to agent workflow in commit message"
-              FOUND_VIOLATION=true
-            fi
-          fi
+          # Check AI tool names with normalization (catches leetspeak/spacing)
+          block_ai_tools = "${{ inputs.block-ai-tools }}" == "true"
+          if block_ai_tools:
+              ai_tools = ['claude', 'gpt', 'chatgpt', 'copilot', 'gemini', 'bard']
+              for tool in ai_tools:
+                  if tool in normalized:
+                      # Check for attribution context
+                      attribution_verbs = ['coauthoredby', 'generatedwith', 'generatedby',
+                                          'createdby', 'writtenby', 'builtby', 'helpedby']
+                      if any(verb in normalized for verb in attribution_verbs):
+                          violations.append(f'❌ ERROR: AI tool attribution detected (found: {tool})')
+                          violations.append(f'  Bypasses like "C1aude" or "C l a u d e" are also blocked')
+                          found_violation = True
+                          break
 
-          if [[ "$FOUND_VIOLATION" == "true" ]]; then
-            echo ""
-            echo "Please remove AI/agent attribution from commit messages."
-            echo "✅ Human co-authors are allowed and encouraged!"
-            exit 1
-          fi
+              # Check explicit patterns
+              if re.search(r'claude\.com/claude-code', commits, re.IGNORECASE):
+                  violations.append('❌ ERROR: Claude Code attribution link detected!')
+                  found_violation = True
 
-          echo "✅ No AI attribution markers found"
-          echo "✅ Human co-authors are allowed and encouraged!"
+              if re.search(r'🤖.*(?:Claude|AI|GPT)', commits, re.IGNORECASE):
+                  violations.append('❌ ERROR: AI emoji attribution detected!')
+                  found_violation = True
+
+              # Check generic AI attribution
+              generic_patterns = [
+                  r'\b(with|by|using|via|from|thanks to)\s+(AI|artificial intelligence|chatbot|chat bot|language model|LLM)\b',
+                  r'\bAI\s+(assistance|help|support|tool)\b',
+              ]
+              for pattern in generic_patterns:
+                  if re.search(pattern, commits, re.IGNORECASE):
+                      violations.append('❌ ERROR: Generic AI attribution detected')
+                      violations.append('  (AI assistance, chatbot help, LLM support, etc.)')
+                      found_violation = True
+                      break
+
+          # Check agent mentions
+          block_agent_mentions = "${{ inputs.block-agent-mentions }}" == "true"
+          if block_agent_mentions:
+              agent_pattern = r'(reviewed by|validated by|approved by|checked by).*(agent|architecture-designer|security-validator|performance-optimizer|test-automation-qa|code-quality-analyzer)'
+              if re.search(agent_pattern, commits, re.IGNORECASE):
+                  violations.append('❌ ERROR: Agent attribution detected in commit!')
+                  violations.append('')
+                  violations.append('Policy: Agent validations should be documented in:')
+                  violations.append('  ✅ Session handoff files')
+                  violations.append('  ✅ Implementation documentation')
+                  violations.append('  ✅ PRD/PDR documents')
+                  violations.append('  ❌ NOT in commit messages')
+                  found_violation = True
+
+              if re.search(r'agent (review|validation|approval|check)', commits, re.IGNORECASE):
+                  violations.append('❌ ERROR: Generic agent reference detected in commit!')
+                  found_violation = True
+
+          if found_violation:
+              for v in violations:
+                  print(v)
+              print('')
+              print('Please remove AI/agent attribution from commit messages.')
+              print('✅ Human co-authors are allowed and encouraged!')
+              print('')
+              print('Note: Enhanced detection catches bypasses like:')
+              print('  • Leetspeak: C1aude, GPT-4, Ch4tGP7')
+              print('  • Spacing: C l a u d e, G P T - 4')
+              print('  • Generic: AI assistance, chatbot help, LLM support')
+              sys.exit(1)
+
+          print('✅ No AI attribution markers found')
+          print('✅ Human co-authors are allowed and encouraged!')
+          PYEOF
