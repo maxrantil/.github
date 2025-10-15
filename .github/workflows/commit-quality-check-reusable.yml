@@ -61,7 +61,8 @@ jobs:
           echo "📊 Found $COMMIT_COUNT commits"
 
           # Count fixup patterns (grep -c returns 0 on no match with exit 1, so we use || true)
-          FIXUP_COUNT=$(echo "$COMMITS" | grep -ciE "^[a-f0-9]+ (fixup|fix:|wip:|tmp:|oops|typo)" || true)
+          # Note: Use \bfixup\b to avoid matching conventional commit type "fix:"
+          FIXUP_COUNT=$(echo "$COMMITS" | grep -ciE "^[a-f0-9]+ (\\bfixup\\b|wip:|tmp:|oops|typo)" || true)
           FIXUP_COUNT=${FIXUP_COUNT:-0}
           echo "🔧 Fixup commits: $FIXUP_COUNT"
 
