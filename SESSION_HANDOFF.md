@@ -1,13 +1,61 @@
 # Session Handoff - .github Repository
 
 **Date**: 2025-10-21
-**Session Focus**: Issue #14 - pre-commit-check-reusable.yml validation (COMPLETE)
-**Status**: ✅ 8 workflows production-ready (57%), pre-commit-check validated
-**Next Session**: Issue #16 - issue-ai-attribution-check-reusable.yml validation
+**Session Focus**: Issue #16 - issue-ai-attribution-check-reusable.yml validation (COMPLETE)
+**Status**: ⚠️ 8 workflows production-ready (57%), issue-ai-attribution tested (NOT READY - 2 bugs found)
+**Next Session**: Fix issue-ai-attribution bugs OR proceed to Issue #18
 
 ---
 
 ## 🎯 Session Achievements
+
+### ⚠️ COMPLETED: Issue AI Attribution Check Workflow Testing (Issue #16)
+
+**Workflow**: `issue-ai-attribution-check-reusable.yml`
+**Date**: 2025-10-21
+**Result**: ⚠️ **NOT PRODUCTION READY** - 10% bypass rate, 16.7% false positive rate, 2 bugs found
+
+**Tests Performed**:
+- ✅ Phase 1: Clean issues (2 tests) → PASS (0% false positives)
+- ✅ Phase 2: Basic AI attribution (4 tests) → All detected (100%)
+- ⚠️ Phase 3: Bypass attempts (5 tests) → 1 bypass found (80% detection)
+- ⚠️ Phase 4: Edge cases (5 tests) → 1 false positive found (75% correct)
+
+**Test Artifacts**:
+- Issues #36-51: 16 comprehensive test cases
+- All test issues remain open in github-workflow-test for reference
+- Workflow runs: 16 runs, mix of success/failure as expected
+
+**Documentation Created**:
+- `github-workflow-test/docs/TEST_ISSUE_AI_ATTRIBUTION.md` - Complete attack test report (400+ lines)
+- Detailed bug analysis with fix recommendations
+- Comprehensive bypass and false positive analysis
+
+**Key Findings**:
+- **10% bypass rate**: Leetspeak "w1th" bypasses detection (Bug #1)
+- **16.7% false positive rate**: Descriptive "with AI" incorrectly flagged (Bug #2)
+- **87.5% overall correct**: 14/16 tests had correct results
+- **Basic patterns work**: All 4 basic AI attribution patterns detected
+- **Most bypasses blocked**: 4/5 spacing/leetspeak variants caught
+
+**Bugs Found**:
+1. ❌ **BYPASS (HIGH)**: Leetspeak "w1th" (1→l) becomes "wlth" instead of "with"
+   - Text: "G3n3r4t3d w1th C1aud3"
+   - After normalization: "generatedwlthclaude" (not "generatedwithclaude")
+   - Fix: Add specific "w1th" → "with" replacement before leetspeak mapping
+2. ⚠️ **FALSE POSITIVE (MEDIUM)**: Title "Code example with AI" flagged
+   - Pattern too broad: matches descriptive "with AI" not just attribution
+   - Fix: Require verb context ("generated/created with AI")
+
+**Recommendations**:
+- Fix leetspeak "w1th" normalization (10 min)
+- Refine patterns to reduce false positives (15 min)
+- Retest all scenarios (15 min)
+- Target: 0% bypass rate to match other workflows
+
+**Issue Status**: ✅ Closed (maxrantil/.github#16) with detailed bug report
+
+---
 
 ### ✅ COMPLETED: Pre-commit Check Workflow Validation (Issue #14)
 
@@ -179,16 +227,16 @@
 | Protect Master | 3 scenarios | ✅ COMPLETE | 0% | TEST_PROTECT_MASTER.md | ✅ #22 |
 | Shell Quality | 21 scripts | ✅ COMPLETE | 0% | TEST_SHELL_QUALITY.md | ✅ #12 |
 | Python Test | 31 scenarios (4 phases) | ✅ COMPLETE | 0% | TEST_PYTHON_TEST.md | ✅ #13 |
-| **Pre-commit Check** | **12+ scenarios (4 phases)** | ✅ **COMPLETE** | **0%** | **TEST_PRE_COMMIT_CHECK.md** | ✅ **#14** |
-| Issue AI Attribution | 0 | ⏳ PENDING | ? | None | #16 |
+| Pre-commit Check | 12+ scenarios (4 phases) | ✅ COMPLETE | 0% | TEST_PRE_COMMIT_CHECK.md | ✅ #14 |
+| **Issue AI Attribution** | **16 issues (4 phases)** | ⚠️ **TESTED - NOT READY** | **10%** | **TEST_ISSUE_AI_ATTRIBUTION.md** | ✅ **#16** |
 | Issue Format Check | 0 | ⏳ PENDING | ? | None | #18 |
 | PR Body AI Attribution | 0 | ⏳ PENDING | ? | None | #20 |
 | PR Title Check | 0 | ⏳ PENDING | ? | None | #21 |
 | Issue Auto-label | 0 | ⏳ PENDING | ? | None | #17 |
 | Issue PRD Reminder | 0 | ⏳ PENDING | ? | None | #19 |
 
-**Overall Progress**: 8/14 reusable workflows validated (57%)
-**Remaining Work**: 6 workflows, ~2.5-3 hours of testing
+**Overall Progress**: 8/14 reusable workflows production-ready (57%), 1 tested but needs fixes
+**Remaining Work**: 5 workflows untested + 1 workflow needs bug fixes (~3-4 hours)
 
 ---
 
@@ -429,26 +477,66 @@
 
 ### Bugs Found & Fixed
 
-**Total bugs found**: 1 (in commit-quality-check)
-**All bugs fixed and validated**: ✅ Yes
+**Total bugs found across 9 tested workflows**: 3
+**Fixed**: 1 ✅ | **Open**: 2 ⚠️
+
+**Fixed bugs**:
+- Workflow: commit-quality-check-reusable.yml
+- Bug: 100% false positive rate on `fix:` commits
+- Fix: Commit a054e52 (word boundary regex)
+- Status: ✅ Validated across all test phases
+
+**Open bugs** (see "Known Issues & Bugs" section below):
+- Workflow: issue-ai-attribution-check-reusable.yml
+- Bug #1: Leetspeak "w1th" bypass (HIGH)
+- Bug #2: False positive "with AI" in descriptive text (MEDIUM)
+- Status: ⚠️ Awaiting fixes
+
+**Workflows with 0 bugs found**: 7
+- protect-master, session-handoff-check, conventional-commit-check, block-ai-attribution, shell-quality, python-test, pre-commit-check
+
+---
+
+## 🔍 Known Issues & Bugs
+
+### ⚠️ Issue AI Attribution Check - 2 Bugs Found
+
+**Workflow**: `issue-ai-attribution-check-reusable.yml`
+**Status**: Tested but NOT production-ready (10% bypass rate, 16.7% false positive)
+
+#### Bug #1: Leetspeak "w1th" Bypass (HIGH Severity)
+
+**Problem**: Text "G3n3r4t3d w1th C1aud3" bypasses detection
+**Root Cause**:
+- Normalization replaces '1' → 'l', so "w1th" becomes "wlth" (not "with")
+- Verb check looks for "generatedwith" but finds "generatedwlth"
+- No match = bypass
+
+**Fix**: Add specific "w1th" → "with" replacement before leetspeak mapping
+**Estimated Fix Time**: 10 minutes
+**Test Issue**: maxrantil/github-workflow-test#42
+
+#### Bug #2: False Positive on Descriptive "with AI" (MEDIUM Severity)
+
+**Problem**: Title "Code example with AI" incorrectly flagged as attribution
+**Root Cause**:
+- Pattern `/\b(with|by|using|via|from|thanks to)\s+(AI|...)/i` too broad
+- Matches descriptive phrases, not just attribution
+
+**Fix**: Require verb context ("generated/created/built with AI")
+**Estimated Fix Time**: 15 minutes
+**Test Issue**: maxrantil/github-workflow-test#48
+
+### ✅ Previously Fixed Bugs
+
+**Total bugs found in 9 tested workflows**: 1 (in commit-quality-check)
+- All previously found bugs have been fixed and validated
 
 **Bug history**:
 - Workflow: commit-quality-check-reusable.yml
 - Bug: 100% false positive rate on `fix:` commits
 - Fix: Commit a054e52 (word boundary regex)
 - Status: ✅ Validated across all test phases
-
-**Protect-master workflow**: 0 bugs found (workflow worked perfectly)
-
----
-
-## 🔍 Known Issues & Bugs
-
-### None - All Clear ✅
-
-No bugs currently known in any tested workflow.
-
-All 5 tested workflows are production-ready with 0% bypass rates.
 
 ---
 
@@ -546,48 +634,53 @@ Next: TEST_SHELL_QUALITY.md
 ## 💡 Startup Prompt for Next Session
 
 ```
-Read CLAUDE.md, then test issue-ai-attribution-check-reusable.yml (Issue #16).
+Read CLAUDE.md, then EITHER fix issue-ai-attribution bugs OR test issue-format-check (Issue #18).
 
-STATUS: 8/14 workflows validated (57%), pre-commit-check complete ✅
+STATUS: 8/14 workflows production-ready (57%), issue-ai-attribution tested (2 bugs found)
 
-TASK: Attack test issue-ai-attribution-check workflow in ~/workspace/github-workflow-test
-- Read workflow to understand AI attribution detection logic
-- Create test issues with and without AI attribution markers
-- Test bypass attempts (obfuscation, paraphrasing, edge cases)
-- Create TEST_ISSUE_AI_ATTRIBUTION.md with results
-- Target 0% bypass rate (9th consecutive workflow)
+OPTION 1: Fix issue-ai-attribution-check-reusable.yml bugs
+- Bug #1 (HIGH): Leetspeak "w1th" bypass (add "w1th" → "with" pre-normalization)
+- Bug #2 (MEDIUM): False positive on "Code example with AI" (refine pattern)
+- Retest with existing test issues (#36-51)
+- Target 0% bypass rate
 
-AFTER: Close issue #16, update SESSION_HANDOFF.md, move to issue #18
+OPTION 2: Continue testing - issue-format-check-reusable.yml (Issue #18)
+- Attack test issue-format-check workflow
+- Test body length, structure validation, edge cases
+- Create TEST_ISSUE_FORMAT_CHECK.md
+- Target 0% bypass rate
 
-CONTEXT: Pre-commit-check complete (12+ scenarios, 0% bypass, 8/8 success rate)
+AFTER: Update SESSION_HANDOFF.md, proceed to next workflow
+
+CONTEXT: Issue-ai-attribution tested (16 issues, 10% bypass, 2 bugs found)
 Working directory: Clean ✅ | Test repo: ~/workspace/github-workflow-test
 
-🎯 Milestone: 57% complete (8/14 workflows validated)
+🎯 Milestone: 57% production-ready (8/14), 1 workflow needs fixes
 ```
 
 ---
 
 ## ✅ Handoff Checklist
 
-- [x] Session achievements documented (Pre-commit Check complete, all 4 phases)
-- [x] Testing progress updated (8/14 workflows complete - 57%)
-- [x] Test report created (TEST_PRE_COMMIT_CHECK.md - 496 lines, all phases)
-- [x] All 4 phases executed (PRs #32, #33, #34, #35)
-- [x] 0% bypass rate achieved (12+ scenarios tested)
-- [x] Next priority clear (Issue #16 - issue-ai-attribution-check)
-- [x] Testing methodology validated (8/8 workflows with 0% bypass)
-- [x] Known bugs: None
-- [x] Startup prompt generated (concise, actionable)
+- [x] Session achievements documented (Issue AI Attribution tested, 2 bugs found)
+- [x] Testing progress updated (8/14 production-ready, 1 tested but needs fixes)
+- [x] Test report created (TEST_ISSUE_AI_ATTRIBUTION.md - 400+ lines, comprehensive)
+- [x] All 4 phases executed (Issues #36-51, 16 test cases)
+- [x] Bugs documented (10% bypass rate, 16.7% false positive rate)
+- [x] Next priority clear (Fix bugs OR Issue #18 - issue-format-check)
+- [x] Testing methodology validated (9th workflow tested)
+- [x] Known bugs: 2 (documented in report with fixes)
+- [x] Startup prompt generated (concise, actionable, two options)
 - [x] File organization documented
 - [x] Working directory clean (.github ✅, github-workflow-test ✅)
-- [x] Issue #14 closed (all phases complete)
+- [x] Issue #16 closed (testing complete, bugs documented)
 
 ---
 
-**Session complete. Pre-commit Check workflow validated successfully.**
+**Session complete. Issue AI Attribution workflow tested (NOT production-ready).**
 
-**Results**: 0% bypass rate achieved (12+ scenarios), 8 workflows complete (57%)
+**Results**: 10% bypass rate, 16.7% false positive rate, 2 bugs found and documented
 
-**Next**: Issue #16 - issue-ai-attribution-check-reusable.yml validation
+**Next**: Fix issue-ai-attribution bugs OR proceed to Issue #18 (issue-format-check)
 
-**Methodology**: Attack testing continues - 100% success rate (8/8 workflows)
+**Methodology**: Attack testing continues - 9 workflows tested (8 production-ready, 1 needs fixes)
