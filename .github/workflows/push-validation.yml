@@ -1,4 +1,4 @@
-# ABOUTME: Push validation workflows for .github repository (protect master branch)
+# ABOUTME: Push validation workflows for .github repository (protect master branch + block AI attribution)
 
 name: Push Validation
 
@@ -12,3 +12,9 @@ jobs:
     uses: ./.github/workflows/protect-master-reusable.yml
     with:
       protected-branch: 'master'
+
+  ai-attribution:
+    name: Block AI Attribution
+    uses: ./.github/workflows/block-ai-attribution-reusable.yml
+    with:
+      base-branch: 'master'
