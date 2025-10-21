@@ -32,6 +32,11 @@ jobs:
             // Normalize text to catch bypasses (leetspeak, spacing)
             function normalize(text) {
               text = text.toLowerCase();
+              // Fix common leetspeak words BEFORE general number replacement
+              // This prevents "w1th" → "wlth" issue (should be "with")
+              text = text.replace(/w1th/g, 'with');
+              text = text.replace(/w17h/g, 'with');
+              text = text.replace(/w!th/g, 'with');
               // Replace leetspeak numbers with letters
               const replacements = {'1': 'l', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'};
               for (const [num, letter] of Object.entries(replacements)) {
@@ -82,8 +87,10 @@ jobs:
             // Check generic AI attribution patterns
             if (!foundAttribution) {
               const genericPatterns = [
-                /\b(with|by|using|via|from|thanks to)\s+(AI|artificial intelligence|chatbot|chat bot|language model|LLM)\b/i,
-                /\bAI\s+(assistance|help|support|tool)\b/i,
+                // Require attribution verbs (generated/created/built) to reduce false positives
+                /\b(generated|created|built|written|made|developed|coded|implemented)\s+(with|by|using)\s+(AI|artificial intelligence|chatbot|chat bot|language model|LLM)\b/i,
+                /\bAI\s+(assistance|help|support)\b/i,
+                /\b(with|using|via)\s+(AI\s+)?(assistance|help|support)\b/i,
                 /\b(AI\s+)?assistant\s+(help|assistance)/i,
               ];
 
