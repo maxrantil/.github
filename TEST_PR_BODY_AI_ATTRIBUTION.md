@@ -54,14 +54,34 @@ text = text.replace(/w!th/g, 'with');
 
 ## Test Strategy
 
-### Phase 1: Confirm Bugs (BEFORE fixes)
-Test attack vectors to confirm both bugs exist in PR body workflow
+### ✅ UPDATED APPROACH: Option C - Leveraged PR #23 Merge
 
-### Phase 2: Apply Fixes
-Port bug fixes from issue-ai-attribution-check-reusable.yml
+**Decision**: After systematic analysis (see CLAUDE.md /motto), chose Option C:
+1. Validated PR #23 completeness → ✅ Complete
+2. Merged PR #23 to master → ✅ Merged at 2025-10-21T17:51:11Z
+3. Applied same fixes to pr-body-ai-attribution → ✅ Applied (commit ea3bbc4)
+4. Test fixed version → ⏳ IN PROGRESS
 
-### Phase 3: Validate Fixes (AFTER fixes)
-Retest all attack vectors to confirm 0% bypass rate and 0% false positive rate
+**Rationale**:
+- Bugs confirmed via code inspection (most reliable method)
+- PR #23 provides proven fixes (tested in Issue #16)
+- Avoids duplicate testing of identical bugs
+- Faster path to production-ready workflow
+- Maintains consistency between issue-ai-attribution and pr-body-ai-attribution
+
+### Test Phases (Modified)
+
+**Phase 1: SKIPPED** - Bugs confirmed via code inspection
+- ✅ Bug #1 confirmed: normalize() missing w1th pre-normalization
+- ✅ Bug #2 confirmed: genericPatterns too broad (same as Issue #16)
+
+**Phase 2: COMPLETED** - Fixes applied from PR #23
+- ✅ Fix #1: Added w1th/w17h/w!th → with pre-normalization
+- ✅ Fix #2: Required attribution verbs in generic patterns
+
+**Phase 3: IN PROGRESS** - Validate fixed version
+- ⏳ Test subset of attack vectors to confirm 0% bypass rate and 0% false positive rate
+- Focus on critical test cases (w1th bypass, false positives, standard attribution)
 
 ---
 
