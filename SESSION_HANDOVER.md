@@ -155,31 +155,49 @@
 
 ### 📋 Recommended Next Steps (Optional)
 
-1. **Close Issue #15** (Comprehensive validation tracking issue)
-   - All workflows now validated
-   - 100% coverage achieved
-   - Link to all 14 validation reports
+**Priority 1: Close Issue #15** (~5-10 minutes)
+- Comprehensive validation tracking issue
+- All 14 workflows now validated (100% coverage)
+- Post final summary with links to all validation reports:
+  - VALIDATION_ISSUE_12.md (shell-quality)
+  - VALIDATION_ISSUE_13.md (python-test)
+  - VALIDATION_ISSUE_14.md (session-handoff)
+  - VALIDATION_ISSUE_16.md (protect-master)
+  - VALIDATION_ISSUE_17.md (issue-auto-label)
+  - VALIDATION_ISSUE_18.md (issue-format-check)
+  - VALIDATION_ISSUE_19.md (issue-prd-reminder)
+  - VALIDATION_ISSUE_20.md (pr-body-ai-attribution)
+  - VALIDATION_ISSUE_21.md (pr-title-check)
+  - VALIDATION_ISSUE_25.md (block-ai-attribution)
+  - VALIDATION_ISSUE_26.md (commit-quality-check)
+  - VALIDATION_ISSUE_27.md (pre-commit-check)
+  - Plus: conventional-commit and issue-ai-attribution (validated, need docs)
 
-2. **Update README.md** (Optional but recommended)
-   - Add validation status badges or section
-   - Document that all workflows are production-ready
-   - Link to validation reports
+**Priority 2: Update README.md** (~15-20 minutes)
+- Add "Workflow Validation Status" section
+- Document that all workflows are production-ready
+- Link to validation reports directory
+- Optional: Add validation badges or statistics
+- Keep README as "living document" per CLAUDE.md
 
-3. **Consider Validation Summary Document** (Optional)
-   - Aggregate statistics across all 14 workflows
-   - Total test scenarios executed (~100+)
-   - Overall findings and recommendations
-   - Success rates and confidence levels
+**Priority 3: Validation Summary Document** (~30-45 minutes, optional)
+- Create `VALIDATION_SUMMARY.md` with:
+  - Aggregate statistics (total scenarios, success rates)
+  - Methodology overview (attack testing, guidance testing, integration testing)
+  - Overall findings and confidence levels
+  - Lessons learned
+  - Recommendations for future workflow development
+- This is nice-to-have but not essential
 
-4. **Normal Development Work** (As needed)
-   - New workflow requests
-   - Bug fixes
-   - Breaking changes with migration guides
-   - Documentation updates
+**Priority 4: Normal Development Work** (As needed)
+- New workflow requests
+- Bug fixes
+- Breaking changes with migration guides
+- Documentation updates
 
-### 🎯 No Immediate Priorities
+### 🎯 Current Priority Level
 
-Validation project is complete. All workflows are production-ready and can be used confidently across all maxrantil repositories.
+**LOW** - All critical work complete. Optional cleanup tasks remain.
 
 ---
 
@@ -390,31 +408,33 @@ git push
 ## Startup Prompt for Next Session
 
 ```
-Read SESSION_HANDOVER.md for project status.
+🎉 VALIDATION COMPLETE - 14/14 workflows validated (100%)
 
-🎉 VALIDATION PROJECT COMPLETE - 14/14 WORKFLOWS (100%)
+OPTIONAL CLEANUP TASKS (Pick any or all):
 
-LAST SESSION: Issues #26, #27 complete
-- ✅ commit-quality-check validated (8 scenarios, 100% accuracy)
-- ✅ pre-commit-check validated (3 scenarios, 100% accuracy)
-- ✅ VALIDATION_ISSUE_26.md created (448 lines)
-- ✅ VALIDATION_ISSUE_27.md created (372 lines)
-- ✅ Issues #26 and #27 closed
-- 🎉 100% VALIDATION COVERAGE ACHIEVED!
+1. Close Issue #15 (~5-10 min)
+   - Post final summary with links to all 12 validation reports
+   - Note: 2 workflows (conventional-commit, issue-ai-attribution)
+     validated but lack formal VALIDATION_ISSUE_*.md docs
 
-CURRENT STATUS:
-- ✅ All 14 reusable workflows production-ready
-- ✅ 100+ test scenarios executed across all workflows
-- ✅ Comprehensive validation documentation for each workflow
-- ✅ No remaining validation work
+2. Update README.md (~15-20 min)
+   - Add "Workflow Validation Status" section
+   - Document production-ready status
+   - Link to validation reports
 
-OPTIONAL NEXT STEPS:
-1. Close Issue #15 (validation tracking issue)
-2. Update README.md with validation status
-3. Consider creating validation summary document
-4. Resume normal development work
+3. Create VALIDATION_SUMMARY.md (~30-45 min, optional)
+   - Aggregate statistics across all workflows
+   - Methodology overview
+   - Lessons learned
 
-NO IMMEDIATE PRIORITIES - Validation project complete! 🎊
+STATUS:
+- ✅ All critical work complete
+- ✅ All workflows production-ready
+- ⏳ Optional documentation cleanup pending
+
+PRIORITY: LOW (cleanup only)
+
+Read full context in SESSION_HANDOVER.md "Next Session Priorities" section.
 ```
 
 ---
