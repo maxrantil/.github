@@ -1,14 +1,89 @@
 # Session Handoff - GitHub Centralized Workflows
 
 **Date**: 2025-10-27
-**Session Focus**: Validation project complete + all cleanup tasks finished 🎉
+**Session Focus**: Pre-commit validation planning + next phase preparation
 **Repository**: `.github` (special GitHub repository for reusable workflows)
 **Status**: ✅ **14/14 workflows production-ready (100%)** - ALL COMPLETE!
-**Documentation**: ✅ **All cleanup tasks complete** - Project ready for normal operations
+**Next Phase**: Pre-commit hook validation in project-templates
 
 ---
 
-## What Was Completed
+## Current Session: Pre-commit Validation Planning
+
+**Date**: 2025-10-27 (afternoon session)
+**Duration**: ~30 minutes (planning only)
+**Repository**: .github (for planning), next session in project-templates
+
+### Discovery: Pre-commit Hook Weakness
+
+**Critical Finding**: Pre-commit hooks NOT installed in .github repository!
+
+**Investigation Results**:
+- ❌ `.git/hooks/` contains only `.sample` files (hooks never installed)
+- ✅ `.pre-commit-config.yaml` exists (configuration file present)
+- ❌ Hooks never run locally (only workflow checks execute on GitHub)
+- ⚠️ **Risk**: Commits can bypass local validation entirely
+
+**Impact**: Multiple maxrantil projects (~X projects) use similar pre-commit configurations that are:
+1. **Not installed** (hooks don't run)
+2. **WEAK version** (when installed, can be bypassed with leetspeak/spacing)
+3. **Inconsistent** with validated workflow checks
+
+### Comparison: Workflow vs Pre-commit Checks
+
+**Workflow Checks** (GitHub Actions):
+- ✅ Always execute (can't be bypassed)
+- ✅ Use strong normalization (Python-based)
+- ✅ 100% validated (VALIDATION_ISSUE_25.md)
+- ✅ Block leetspeak: "C1aude" → "claude"
+- ✅ Block spacing: "C l a u d e" → "claude"
+
+**Pre-commit Hooks** (Local, in most projects):
+- ❌ Only run if installed
+- ❌ Use weak regex (basic grep)
+- ❌ No normalization layer
+- ❌ Bypassable: "C1aude", "C l a u d e", etc.
+
+### Planning Document Created
+
+**Created**: `/home/mqx/workspace/project-templates/PRE_COMMIT_VALIDATION_PLAN.md`
+
+**Comprehensive 43-scenario test plan**:
+- Phase 1: Baseline testing (prove weakness)
+- Phase 2: Update to strong version
+- Phase 3: Full validation (43 test scenarios)
+- Phase 4: Documentation
+- Phase 5: Rollout to ~X projects
+
+**Test Coverage**:
+- 10 tests: AI attribution in files
+- 12 tests: AI attribution in commit messages
+- 8 tests: Conventional commit format
+- 8 tests: Bypass prevention
+- 5 tests: Edge cases
+
+**Success Criteria**: 0% bypass rate across all 43 tests
+
+### Next Session Preparation
+
+**Repository**: project-templates (validation testbed)
+**Branch**: feat/enhanced-pre-commit-config
+**Estimated Time**: ~155 minutes (2.5 hours)
+
+**Deliverables**:
+1. test-pre-commit.sh (automated test harness)
+2. VALIDATION_PRE_COMMIT.md (comprehensive validation report)
+3. PRE_COMMIT_ROLLOUT.md (deployment plan for ~X projects)
+
+**Methodology**: Attack testing (same as successful workflow validation)
+
+---
+
+## Previous Session: All Optional Cleanup Tasks Complete
+
+**Date**: 2025-10-27 (morning session)
+
+### What Was Completed
 
 ### ✅ All Optional Cleanup Tasks Complete (This Session)
 
