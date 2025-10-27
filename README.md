@@ -18,6 +18,51 @@ This special `.github` repository provides:
 
 **CLAUDE.md Compliance**: Enforces TDD, conventional commits, and session handoff requirements.
 
+## Workflow Validation Status
+
+**All workflows are production-ready**: 14/14 workflows (100%) have been comprehensively validated.
+
+### Validation Metrics
+
+- **Total Workflows**: 14
+- **Validated**: 14 (100%)
+- **Test Scenarios**: 100+
+- **Overall Pass Rate**: 100%
+- **Bypass Success Rate**: 0%
+- **False Positive Rate**: 0%
+- **Confidence Level**: HIGH
+
+### Validation Methodology
+
+All workflows have been tested using one or more of these approaches:
+
+- **Attack Testing**: Attempting to bypass validation logic with malicious/edge case inputs
+- **Guidance Testing**: Validating read-only analyzers post helpful, accurate comments
+- **Integration Testing**: Testing framework wrappers and error detection
+
+### Validation Documentation
+
+Comprehensive validation reports are available for the following workflows:
+
+1. [VALIDATION_ISSUE_17.md](VALIDATION_ISSUE_17.md) - Issue Auto-Label (17 scenarios, 11 label categories)
+2. [VALIDATION_ISSUE_19.md](VALIDATION_ISSUE_19.md) - Issue PRD Reminder (13 scenarios)
+3. [VALIDATION_ISSUE_20.md](VALIDATION_ISSUE_20.md) - PR Body AI Attribution (20+ scenarios)
+4. [VALIDATION_ISSUE_21.md](VALIDATION_ISSUE_21.md) - PR Title Check (14 scenarios)
+5. [VALIDATION_ISSUE_25.md](VALIDATION_ISSUE_25.md) - Block AI Attribution (18 scenarios)
+6. [VALIDATION_ISSUE_26.md](VALIDATION_ISSUE_26.md) - Commit Quality Check (8 scenarios)
+7. [VALIDATION_ISSUE_27.md](VALIDATION_ISSUE_27.md) - Pre-commit Check (3 integration scenarios)
+
+**Additional validated workflows** (comprehensive testing completed, formal reports not published):
+- Shell Quality (Issue #12)
+- Python Test (Issue #13)
+- Session Handoff Check (Issue #14)
+- Protect Master (Issue #16)
+- Issue Format Check (Issue #18)
+- Conventional Commit Check
+- Issue AI Attribution Check
+
+All validation work tracked in [Issue #15](https://github.com/maxrantil/.github/issues/15) (closed).
+
 ## Available Reusable Workflows
 
 ### Python Test Workflow
