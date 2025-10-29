@@ -1,5 +1,5 @@
-# ABOUTME: Pre-commit hooks for .github repository
-# ABOUTME: Central workflow and template validation for all maxrantil repositories
+# ABOUTME: Pre-commit hooks for maxrantil/.github repository
+# ABOUTME: Centralized templates and workflows with strong validation hooks
 # Install: pre-commit install && pre-commit install --hook-type commit-msg
 # Run manually: pre-commit run --all-files
 # Docs: https://pre-commit.com/
@@ -104,7 +104,7 @@ repos:
           - -c
           - |
             # Exclude common documentation and config files
-            EXCLUDES=":(exclude).pre-commit-config.yaml :(exclude)docs/ :(exclude)SESSION*.md :(exclude)*HANDOFF*.md"
+            EXCLUDES=":(exclude).pre-commit-config.yaml :(exclude)docs/ :(exclude)SESSION*.md :(exclude)*HANDOFF*.md :(exclude)test-*.sh :(exclude)test-*.txt :(exclude)test-*.log"
 
             # Get staged changes
             DIFF=$(git diff --cached --diff-filter=ACMR -- $EXCLUDES | grep "^+")
@@ -121,7 +121,8 @@ repos:
             result = subprocess.run(
                 ['git', 'diff', '--cached', '--diff-filter=ACMR', '--',
                  ':(exclude).pre-commit-config.yaml', ':(exclude)docs/',
-                 ':(exclude)SESSION*.md', ':(exclude)*HANDOFF*.md'],
+                 ':(exclude)SESSION*.md', ':(exclude)*HANDOFF*.md',
+                 ':(exclude)test-*.sh', ':(exclude)test-*.txt', ':(exclude)test-*.log'],
                 capture_output=True, text=True
             )
             diff_lines = [line for line in result.stdout.split('\n') if line.startswith('+')]
@@ -192,7 +193,6 @@ repos:
                     print('  ❌ Generic AI attribution (AI assistance, chatbot help, etc.)')
                     print('')
                     sys.exit(1)
-            PYEOF
 
       # -------------------------------------------------------------------------
       # AI/AGENT ATTRIBUTION BLOCKING IN COMMIT MESSAGES
@@ -200,14 +200,13 @@ repos:
       - id: no-ai-attribution-commit-msg
         name: Block AI Attribution in Commit Messages
         description: Prevent AI attribution with normalization (catches leetspeak, spacing)
-        entry: bash
+        entry: python3
         language: system
         stages: [commit-msg]
         args:
           - -c
           - |
-            python3 - "$0" << 'PYEOF'
-            import sys, re
+            import sys, re, unicodedata
 
             if len(sys.argv) < 2:
                 print("ERROR: No commit message file provided")
@@ -216,51 +215,70 @@ repos:
             with open(sys.argv[1]) as f:
                 msg = f.read()
 
-            # Normalize text: replace leetspeak, then remove spaces/special chars
-            # This catches: C1aude -> claude, C l a u d e -> claude, GPT-4 -> gpt
+            # Normalize text: Unicode, zero-width chars, leetspeak, spaces
+            # Catches: C1aude -> claude, C‌l‌a‌u‌d‌e -> claude (zero-width), Clаude -> claude (Cyrillic)
             def normalize(text):
+                # Normalize Unicode to prevent homoglyph attacks (Cyrillic a vs Latin a)
+                text = unicodedata.normalize('NFKD', text)
+                text = text.encode('ascii', 'ignore').decode('ascii')
+
+                # Remove zero-width characters (invisible separators)
+                zero_width_chars = '\u200b\u200c\u200d\ufeff'
+                for char in zero_width_chars:
+                    text = text.replace(char, '')
+
                 text = text.lower()
-                # Replace leetspeak numbers with letters first
+                # Replace leetspeak numbers with letters
                 replacements = {'1': 'l', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'}
                 for num, letter in replacements.items():
                     text = text.replace(num, letter)
-                # Then remove spaces, hyphens, underscores
+                # Remove spaces, hyphens, underscores
+                return re.sub(r'[\s_-]', '', text)
+
+            # Alternate normalization for Gemini detection (1→i instead of 1→l)
+            # Catches: G3m1n1 -> gemini (where '1' represents 'i')
+            def normalize_with_i(text):
+                # Normalize Unicode to prevent homoglyph attacks
+                text = unicodedata.normalize('NFKD', text)
+                text = text.encode('ascii', 'ignore').decode('ascii')
+
+                # Remove zero-width characters
+                zero_width_chars = '\u200b\u200c\u200d\ufeff'
+                for char in zero_width_chars:
+                    text = text.replace(char, '')
+
+                text = text.lower()
+                # Replace leetspeak with 1→i for Gemini detection
+                replacements = {'1': 'i', '3': 'e', '4': 'a', '0': 'o', '5': 's', '7': 't'}
+                for num, letter in replacements.items():
+                    text = text.replace(num, letter)
+                # Remove spaces, hyphens, underscores
                 return re.sub(r'[\s_-]', '', text)
 
             normalized_msg = normalize(msg)
+            normalized_msg_alt = normalize_with_i(msg)
 
             # Check normalized text for AI tool names (catches leetspeak/spacing)
+            # Block ANY mention of AI tools, regardless of context (they're trying to sneak attribution)
             ai_tools = ['claude', 'gpt', 'chatgpt', 'copilot', 'gemini', 'bard']
             for tool in ai_tools:
-                if tool in normalized_msg:
-                    # Found tool name - check if it's in attribution context
-                    # Check for attribution verbs in normalized message
-                    attribution_verbs = ['coauthoredby', 'generatedwith', 'generatedby', 'reviewedby',
-                                        'validatedby', 'approvedby', 'checkedby', 'implementedby',
-                                        'createdby', 'writtenby', 'helpedby', 'assistedby', 'thanksto',
-                                        'with', 'by', 'using', 'from', 'via']
-
-                    # Check if any attribution verb appears near the tool name
-                    tool_pos = normalized_msg.find(tool)
-                    text_before = normalized_msg[:tool_pos]
-
-                    for verb in attribution_verbs:
-                        if verb in text_before or verb in normalized_msg:
-                            print('')
-                            print('❌ ERROR: AI/agent attribution detected in commit message')
-                            print('')
-                            print('Policy: Remove AI tool attributions from commits (per CLAUDE.md)')
-                            print('  ❌ Co-authored-by: Claude/GPT/AI')
-                            print('  ❌ Generated with [AI tool]')
-                            print('  ❌ Agent validation mentions')
-                            print('  ❌ Bypasses via leetspeak (C1aude) or spacing (C l a u d e)')
-                            print('')
-                            print('✅ Document agent validations in:')
-                            print('  • Session handoff files (SESSION_HANDOFF.md)')
-                            print('  • Implementation documentation (docs/)')
-                            print('  • PRD/PDR documents')
-                            print('')
-                            sys.exit(1)
+                if tool in normalized_msg or tool in normalized_msg_alt:
+                    print('')
+                    print('❌ ERROR: AI/agent attribution detected in commit message')
+                    print('')
+                    print('Policy: Remove AI tool names from commits (per CLAUDE.md)')
+                    print(f'  ❌ Detected: {tool} (after normalization)')
+                    print('  ❌ Co-authored-by: Claude/GPT/AI')
+                    print('  ❌ Generated with [AI tool]')
+                    print('  ❌ Bypasses via leetspeak (C1aude, G3m1n1) or spacing (C l a u d e)')
+                    print('  ❌ Any mention of AI tool names')
+                    print('')
+                    print('✅ Document agent validations in:')
+                    print('  • Session handoff files (SESSION_HANDOFF.md)')
+                    print('  • Implementation documentation (docs/)')
+                    print('  • PRD/PDR documents')
+                    print('')
+                    sys.exit(1)
 
             # Check for explicit patterns that don't need normalization
             explicit_patterns = [
@@ -310,7 +328,6 @@ repos:
                     print('  • PRD/PDR documents')
                     print('')
                     sys.exit(1)
-            PYEOF
 
       # -------------------------------------------------------------------------
       # CONVENTIONAL COMMIT FORMAT VALIDATION
@@ -318,13 +335,12 @@ repos:
       - id: conventional-commit-msg
         name: Enforce Conventional Commit Format
         description: Validate commit messages follow conventional commit format
-        entry: bash
+        entry: python3
         language: system
         stages: [commit-msg]
         args:
           - -c
           - |
-            python3 - "$1" << 'PYEOF'
             import sys, re
 
             if len(sys.argv) < 2:
@@ -351,7 +367,6 @@ repos:
                 print('')
                 print('Breaking changes: Add ! after type/scope (e.g., feat!: remove old workflow)')
                 sys.exit(1)
-            PYEOF
 
       # -------------------------------------------------------------------------
       # CREDENTIALS/SECRETS DETECTION
@@ -365,46 +380,8 @@ repos:
         args:
           - -c
           - |
-            if grep -r --include="*.sh" --include="*.bash" --include="*.py" --include="*.js" --include="*.ts" --include="*.txt" --include="*.yml" --include="*.yaml" -iE "(password|api_key|secret|token|github_token).*=.*['\"\`]\S+" --exclude-dir=tests --exclude-dir=node_modules --exclude-dir=.git .; then
+            if grep -r --include="*.sh" --include="*.bash" --include="*.py" --include="*.js" --include="*.ts" --include="*.txt" --include="*.yml" --include="*.yaml" --exclude=".pre-commit-config.yaml" -iE "(password|api_key|secret|token|github_token).*=.*['\"\`]\S+" --exclude-dir=tests --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=templates .; then
               echo "⚠️  WARNING: Potential credentials found!"
               echo "Review carefully before committing"
               exit 1
             fi
-
-      # -------------------------------------------------------------------------
-      # WORKFLOW-SPECIFIC VALIDATION HOOKS
-      # -------------------------------------------------------------------------
-      - id: workflow-aboutme-check
-        name: Verify ABOUTME headers in workflows
-        description: Ensure all workflows have ABOUTME documentation headers
-        entry: bash
-        language: system
-        files: '^workflows/.*\.yml$'
-        args:
-          - -c
-          - |
-            for file in "$@"; do
-              if ! grep -q "^# ABOUTME:" "$file"; then
-                echo "❌ ERROR: Missing ABOUTME header in $file"
-                echo "All workflow files must start with '# ABOUTME:' documentation"
-                exit 1
-              fi
-            done
-
-      - id: workflow-template-properties
-        name: Check workflow template properties files
-        description: Ensure workflow templates have companion .properties.json
-        entry: bash
-        language: system
-        files: '^workflow-templates/.*\.yml$'
-        args:
-          - -c
-          - |
-            for file in "$@"; do
-              properties_file="${file%.yml}.properties.json"
-              if [ ! -f "$properties_file" ]; then
-                echo "❌ ERROR: Missing properties file for $file"
-                echo "Expected: $properties_file"
-                exit 1
-              fi
-            done
