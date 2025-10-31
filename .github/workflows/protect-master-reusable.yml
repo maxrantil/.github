@@ -1,4 +1,6 @@
 # ABOUTME: Reusable workflow to block direct pushes to master branch (only allow PR merges)
+# PERMISSIONS: contents: read, pull-requests: read - Required to read commits and query PR associations via GitHub API
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Protect Master Branch (Reusable)
 
 on:
@@ -8,6 +10,10 @@ on:
         description: 'Branch to protect from direct pushes'
         type: string
         default: 'master'
+
+permissions:
+  contents: read       # Required: Read commits and repository metadata
+  pull-requests: read  # Required: Query PR associations via GitHub API
 
 jobs:
   block-direct-push:
