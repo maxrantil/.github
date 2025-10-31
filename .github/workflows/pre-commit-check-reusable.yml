@@ -1,4 +1,6 @@
 # ABOUTME: Reusable workflow to run pre-commit hooks in CI (catches bypassed hooks)
+# PERMISSIONS: contents: read - Required to checkout code and fetch git history for changed files
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Pre-commit Check (Reusable)
 
 on:
@@ -17,6 +19,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read  # Required: Checkout code and fetch git history for changed files
+
 jobs:
   run-pre-commit:
     name: Run Pre-commit Hooks
@@ -32,8 +37,11 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: uv tool install pre-commit
 
       - name: Run pre-commit hooks
         run: |

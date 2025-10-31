@@ -1,4 +1,6 @@
 # ABOUTME: Reusable workflow to block AI/agent attribution in commit messages
+# PERMISSIONS: contents: read - Required to fetch git history and read commit messages
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Block AI Attribution (Reusable)
 
 on:
@@ -16,6 +18,9 @@ on:
         description: 'Block agent names in commit messages'
         type: boolean
         default: true
+
+permissions:
+  contents: read  # Required: Fetch git history and read commit messages
 
 jobs:
   check-attribution:

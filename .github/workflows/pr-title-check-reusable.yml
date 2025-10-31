@@ -1,4 +1,6 @@
 # ABOUTME: Reusable workflow to validate PR titles follow conventional commit format
+# PERMISSIONS: pull-requests: read - Required to read PR title from event context
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: PR Title Check (Reusable)
 
 on:
@@ -8,6 +10,9 @@ on:
         description: 'Comma-separated list of allowed commit types'
         type: string
         default: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert'
+
+permissions:
+  pull-requests: read  # Required: Read PR title from event context
 
 jobs:
   check-title:

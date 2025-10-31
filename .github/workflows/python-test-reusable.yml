@@ -1,4 +1,6 @@
 # ABOUTME: Reusable Python test workflow - callable from any repository
+# PERMISSIONS: contents: read - Required to checkout code and read test files
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Python Tests (Reusable)
 
 on:
@@ -29,6 +31,9 @@ on:
         required: false
         type: string
         default: '.'
+
+permissions:
+  contents: read  # Required: Checkout code and read test files
 
 jobs:
   test:
