@@ -44,13 +44,13 @@ All workflows have been tested using one or more of these approaches:
 
 Comprehensive validation reports are available for the following workflows:
 
-1. [VALIDATION_ISSUE_17.md](VALIDATION_ISSUE_17.md) - Issue Auto-Label (17 scenarios, 11 label categories)
-2. [VALIDATION_ISSUE_19.md](VALIDATION_ISSUE_19.md) - Issue PRD Reminder (13 scenarios)
-3. [VALIDATION_ISSUE_20.md](VALIDATION_ISSUE_20.md) - PR Body AI Attribution (20+ scenarios)
-4. [VALIDATION_ISSUE_21.md](VALIDATION_ISSUE_21.md) - PR Title Check (14 scenarios)
-5. [VALIDATION_ISSUE_25.md](VALIDATION_ISSUE_25.md) - Block AI Attribution (18 scenarios)
-6. [VALIDATION_ISSUE_26.md](VALIDATION_ISSUE_26.md) - Commit Quality Check (8 scenarios)
-7. [VALIDATION_ISSUE_27.md](VALIDATION_ISSUE_27.md) - Pre-commit Check (3 integration scenarios)
+1. [VALIDATION_ISSUE_17.md](docs/validation/VALIDATION_ISSUE_17.md) - Issue Auto-Label (17 scenarios, 11 label categories)
+2. [VALIDATION_ISSUE_19.md](docs/validation/VALIDATION_ISSUE_19.md) - Issue PRD Reminder (13 scenarios)
+3. [VALIDATION_ISSUE_20.md](docs/validation/VALIDATION_ISSUE_20.md) - PR Body AI Attribution (20+ scenarios)
+4. [VALIDATION_ISSUE_21.md](docs/validation/VALIDATION_ISSUE_21.md) - PR Title Check (14 scenarios)
+5. [VALIDATION_ISSUE_25.md](docs/validation/VALIDATION_ISSUE_25.md) - Block AI Attribution (18 scenarios)
+6. [VALIDATION_ISSUE_26.md](docs/validation/VALIDATION_ISSUE_26.md) - Commit Quality Check (8 scenarios)
+7. [VALIDATION_ISSUE_27.md](docs/validation/VALIDATION_ISSUE_27.md) - Pre-commit Check (3 integration scenarios)
 
 **Additional validated workflows** (comprehensive testing completed, formal reports not published):
 - Shell Quality (Issue #12)
