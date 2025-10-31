@@ -1,4 +1,6 @@
 # ABOUTME: Reusable conventional commit format checker
+# PERMISSIONS: contents: read - Required to fetch git history and read commit messages
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Conventional Commit Check (Reusable)
 
 on:
@@ -14,6 +16,9 @@ on:
         required: false
         type: string
         default: 'master'
+
+permissions:
+  contents: read  # Required: Fetch git history and read commit messages
 
 jobs:
   check-commit-format:

@@ -1,4 +1,6 @@
 # ABOUTME: Reusable session handoff verification workflow
+# PERMISSIONS: contents: read - Required to fetch git history and check for handoff files
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Session Handoff Check (Reusable)
 
 on:
@@ -24,6 +26,9 @@ on:
         required: false
         type: number
         default: 10
+
+permissions:
+  contents: read  # Required: Fetch git history and check for handoff files
 
 jobs:
   check-handoff:

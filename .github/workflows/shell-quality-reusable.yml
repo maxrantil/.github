@@ -1,4 +1,6 @@
 # ABOUTME: Reusable shell quality workflow - ShellCheck and shfmt validation
+# PERMISSIONS: contents: read - Required to checkout code and read shell scripts
+# SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Shell Quality (Reusable)
 
 on:
@@ -24,6 +26,9 @@ on:
         required: false
         type: string
         default: '-d -i 4 -ci -sr'
+
+permissions:
+  contents: read  # Required: Checkout code and read shell scripts
 
 jobs:
   shellcheck:
