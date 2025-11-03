@@ -200,12 +200,25 @@
 
 ## 💡 Startup Prompt for Next Session
 
-### Issue #4 Complete - Next Task
+### PRIORITY: Fix PR/Push Validation Workflow Failures
 
 ```
-Issue #4 (workflow caching) is fully complete with all 6 tests passed, PR #32 merged to master, and Issue #4 closed. The implementation achieved the expected 50-80% CI performance improvement with comprehensive caching for UV dependencies and pre-commit environments.
+Issue #4 (workflow caching) is complete and merged. However, during testing we discovered that pr-validation.yml and related PR/push validation workflows are failing with startup_failure. This is blocking proper CI/CD validation in the .github repository itself.
 
-Next recommended issue: Issue #1 - Create profile/README.md for GitHub organization public profile showcase. This is a documentation task that will improve the organization's GitHub presence.
+PRIORITY TASK: Investigate and fix pr-validation.yml workflow failures. Start by:
+1. Running: gh run list --workflow=pr-validation.yml --limit 10
+2. Examining the workflow file for syntax or configuration issues
+3. Checking GitHub Actions logs for specific error messages
+4. Creating a GitHub issue to track the fix
+5. Testing the fix properly before merging
+
+This is a HIGH PRIORITY infrastructure issue that should be resolved before tackling new features like Issue #1.
+```
+
+### Alternative: If Validation Issues Are Deferred
+
+```
+If Doctor Hubert decides to defer the validation workflow fix, proceed with Issue #1 - Create profile/README.md for GitHub organization public profile showcase.
 ```
 
 ---
@@ -427,7 +440,95 @@ Document results in PR #32:
 
 ---
 
+## 🚨 DISCOVERED ISSUE: PR/Push Validation Workflows Not Working
+
+**Discovered During**: Issue #4 testing (2025-11-03)
+**Status**: 🔴 REQUIRES INVESTIGATION
+**Priority**: HIGH (blocks repository CI/CD validation)
+
+### Problem Description
+
+While attempting to test Issue #4 caching changes in the .github repository's own PR workflows, discovered that **pr-validation.yml and related validation workflows are experiencing startup_failure**.
+
+### What We Know
+
+**Symptoms**:
+- All PR validation workflows fail with `startup_failure` status
+- Workflows fail before any jobs execute
+- Issue appears to be systemic (affects multiple workflows)
+- Problem is pre-existing (not caused by Issue #4 changes)
+
+**Affected Workflows**:
+- `.github/workflows/pr-validation.yml` (confirmed failing)
+- Potentially other validation workflows (needs investigation)
+
+**Impact**:
+- Cannot validate workflow changes in the .github repository itself via PRs
+- Must rely on external testing in github-workflow-test repository
+- Reduces confidence in changes before merging
+
+**Workaround Used**:
+- During Issue #4, we tested exclusively in github-workflow-test repository
+- This proved successful but is not ideal for .github repo development
+
+### What Needs Investigation
+
+**Next Session Tasks**:
+
+1. **Identify Root Cause**:
+   - Check workflow syntax and structure
+   - Verify workflow_call vs workflow_dispatch configurations
+   - Review GitHub Actions logs for startup_failure details
+   - Check for missing required inputs or permissions
+
+2. **Examine pr-validation.yml**:
+   - Review current workflow configuration
+   - Check if it's properly calling reusable workflows
+   - Verify trigger conditions (pull_request events)
+   - Check for any invalid references to workflows or actions
+
+3. **Check Related Workflows**:
+   - Identify all validation workflows in the repository
+   - Determine which ones are affected
+   - Document scope of the issue
+
+4. **Fix Implementation**:
+   - Create GitHub issue to track the fix
+   - Create feature branch for repairs
+   - Fix identified issues with proper testing
+   - Validate fixes actually work on a PR
+
+5. **Prevent Recurrence**:
+   - Add validation workflow to github-workflow-test for ongoing testing
+   - Consider adding workflow syntax validation to pre-commit hooks
+   - Document proper workflow testing procedures
+
+### Recommended Approach
+
+```bash
+# Start investigation by examining the failing workflow
+gh run list --workflow=pr-validation.yml --limit 10
+
+# View details of failed run
+gh run view <run-id>
+
+# Check workflow file syntax
+cat .github/workflows/pr-validation.yml
+
+# Compare with working workflows
+cat .github/workflows/python-test-reusable.yml
+```
+
+### Files to Examine
+
+- `.github/workflows/pr-validation.yml` - Primary suspect
+- `.github/workflows/*.yml` - Check for similar issues
+- Recent commits that may have affected workflows
+- GitHub Actions logs for specific error messages
+
+---
+
 **Session Status**: ✅ ISSUE #4 FULLY COMPLETE
 **Handoff Status**: ✅ DOCUMENTED
-**Next Action**: 🎯 READY FOR NEXT ISSUE (Issue #1 recommended)
+**Next Action**: 🔴 INVESTIGATE PR/PUSH VALIDATION WORKFLOW FAILURES (HIGH PRIORITY)
 **Production Status**: ✅ LIVE (caching active in all consuming repositories)
