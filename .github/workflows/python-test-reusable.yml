@@ -1,4 +1,4 @@
-# ABOUTME: Reusable Python test workflow - callable from any repository
+# ABOUTME: Reusable Python test workflow with UV dependency caching - callable from any repository
 # PERMISSIONS: contents: read - Required to checkout code and read test files
 # SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Python Tests (Reusable)
@@ -48,8 +48,11 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
-      - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install and cache UV
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: ${{ inputs.python-version }}
 
       - name: Run pre-install commands
         if: inputs.pre-install-command != ''
@@ -59,6 +62,26 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ inputs.working-directory }}
         run: ${{ inputs.install-command }}
+
+      - name: Report UV cache statistics
+        if: always()
+        run: |
+          echo "### UV Cache Statistics" >> $GITHUB_STEP_SUMMARY
+
+          # Get cache directory safely (may fail on first run)
+          CACHE_DIR=$(uv cache dir 2>/dev/null || echo "")
+
+          if [[ -n "$CACHE_DIR" && -d "$CACHE_DIR" ]]; then
+            echo "- Cache directory: $CACHE_DIR" >> $GITHUB_STEP_SUMMARY
+            CACHE_SIZE=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1 || echo "N/A")
+            echo "- Cache size: $CACHE_SIZE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Cache directory: N/A (first run or UV not initialized)" >> $GITHUB_STEP_SUMMARY
+            echo "- Cache size: N/A" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Dependency installation completed (see timing in previous step)" >> $GITHUB_STEP_SUMMARY
 
       - name: Run tests
         working-directory: ${{ inputs.working-directory }}

@@ -1,4 +1,4 @@
-# ABOUTME: Reusable workflow to run pre-commit hooks in CI (catches bypassed hooks)
+# ABOUTME: Reusable workflow to run pre-commit hooks with environment caching (catches bypassed hooks)
 # PERMISSIONS: contents: read - Required to checkout code and fetch git history for changed files
 # SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Pre-commit Check (Reusable)
@@ -37,11 +37,50 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
-      - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+
+          # Cache key structure ensures proper invalidation:
+          # - runner.os: Prevents Linux/Windows/macOS cache incompatibility
+          # - inputs.python-version: Ensures hooks match Python environment
+          # - hashFiles('.pre-commit-config.yaml'): Invalidates when hooks change
+          key: precommit-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+          # Fallback strategy: Reuse cache with same OS/Python but different config
+          # This allows partial hook reuse when config changes (only re-install changed hooks)
+          restore-keys: |
+            precommit-${{ runner.os }}-py${{ inputs.python-version }}-
+
+      - name: Install and cache UV
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
 
       - name: Install pre-commit
         run: uv tool install pre-commit
+
+      - name: Report pre-commit cache statistics
+        if: always()
+        run: |
+          echo "### Pre-commit Cache Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- Cache location: ~/.cache/pre-commit" >> $GITHUB_STEP_SUMMARY
+
+          # Get cache size safely (may not exist on first run)
+          if [[ -d ~/.cache/pre-commit ]]; then
+            CACHE_SIZE=$(du -sh ~/.cache/pre-commit 2>/dev/null | cut -f1 || echo "N/A")
+            echo "- Cache size: $CACHE_SIZE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Cache size: N/A (first run or cache miss)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Get pre-commit version
+          PRECOMMIT_VERSION=$(pre-commit --version 2>/dev/null || echo "N/A")
+          echo "- Pre-commit version: $PRECOMMIT_VERSION" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Pre-commit environment ready (see timing in previous step)" >> $GITHUB_STEP_SUMMARY
 
       - name: Run pre-commit hooks
         run: |
