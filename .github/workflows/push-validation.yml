@@ -6,6 +6,10 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   protect-master:
     name: Protect Master Branch
