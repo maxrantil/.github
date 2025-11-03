@@ -1,0 +1,82 @@
+# ABOUTME: Reusable workflow for Ansible playbook validation (ansible-lint, yamllint, syntax check)
+
+name: Ansible Linting (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Directory containing Ansible files'
+        type: string
+        default: './ansible'
+        required: false
+
+      ansible-lint-version:
+        description: 'ansible-lint version to use'
+        type: string
+        default: 'latest'
+        required: false
+
+      playbook-path:
+        description: 'Path to playbook file (relative to working-directory)'
+        type: string
+        default: 'playbook.yml'
+        required: false
+
+jobs:
+  ansible-lint:
+    name: Ansible Linting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible-lint
+        run: |
+          if [ "${{ inputs.ansible-lint-version }}" = "latest" ]; then
+            pip install ansible-lint
+          else
+            pip install ansible-lint==${{ inputs.ansible-lint-version }}
+          fi
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run ansible-lint
+        run: ansible-lint ${{ inputs.playbook-path }}
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Validate YAML syntax
+        run: |
+          find . -name "*.yml" -o -name "*.yaml" | xargs yamllint
+        working-directory: ${{ inputs.working-directory }}
+
+  ansible-syntax:
+    name: Ansible Syntax Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Ansible Syntax Check
+        run: ansible-playbook --syntax-check ${{ inputs.playbook-path }}
+        working-directory: ${{ inputs.working-directory }}
