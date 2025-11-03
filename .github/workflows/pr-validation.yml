@@ -7,6 +7,10 @@ on:
     branches: [master]
     types: [opened, edited, synchronize]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pr-title:
     name: Check PR Title
@@ -29,9 +33,6 @@ jobs:
 
   commit-quality:
     name: Commit Quality Check
-    permissions:
-      pull-requests: write
-      contents: read
     uses: ./.github/workflows/commit-quality-check-reusable.yml
     with:
       base-branch: 'master'
