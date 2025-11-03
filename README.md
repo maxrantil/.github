@@ -418,17 +418,59 @@ jobs:
 - `playbook-path`: Path to playbook file relative to working-directory (default: `playbook.yml`)
 
 **Behavior**:
-- Runs ansible-lint on specified playbook for best practices validation
-- Validates YAML syntax with yamllint for all `.yml` and `.yaml` files
-- Performs Ansible syntax check with `ansible-playbook --syntax-check`
-- Runs two parallel jobs: ansible-lint (with yamllint) and ansible-syntax
-- Uses Python 3.12 with explicit `contents: read` permission
+- **ansible-lint**: Validates Ansible best practices (naming, deprecated syntax, task complexity, privilege escalation, etc.)
+- **yamllint**: Checks YAML formatting (indentation, line length, trailing spaces, document structure) for all `.yml` and `.yaml` files
+- **Ansible syntax check**: Verifies playbook syntax with `ansible-playbook --syntax-check` (detects undefined variables, import errors, module issues)
+- Executes two parallel jobs for efficiency: `ansible-lint` (includes yamllint) and `ansible-syntax` (~1-2 minutes total on typical playbooks)
+- Uses Python 3.12 with explicit `contents: read` permission for security best practices
+
+**Custom Configuration**:
+
+Create `.ansible-lint` in your repository root to customize ansible-lint rules:
+
+```yaml
+# .ansible-lint
+skip_list:
+  - yaml[line-length]  # Allow longer lines for readability
+  - name[casing]       # Allow flexible task naming
+  - role-name          # Skip role naming conventions
+
+warn_list:
+  - experimental       # Warn on experimental features
+
+# Exclude specific files/directories
+exclude_paths:
+  - .cache/
+  - .github/
+  - test/fixtures/
+```
+
+Create `.yamllint` in your repository root to customize YAML formatting rules:
+
+```yaml
+# .yamllint
+extends: default
+
+rules:
+  line-length:
+    max: 120          # Allow longer lines
+    level: warning    # Don't fail on long lines
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  comments:
+    min-spaces-from-content: 1
+```
 
 **Best Practices**:
-- Trigger on changes to `ansible/**` paths to avoid unnecessary runs
-- Use `ansible-lint-version: 'latest'` for automatic updates (default)
-- Specify exact version for reproducible builds in production environments
-- Customize playbook-path if using non-standard playbook names
+- **Path Filtering**: Trigger only on `ansible/**` changes to avoid unnecessary runs and save CI minutes
+- **Version Pinning Strategy**:
+  - Use `'latest'` (default) for active development and non-critical projects to get automatic updates
+  - Pin to specific versions (e.g., `'6.22.2'`) for production environments requiring reproducible builds
+  - Test with `'latest'` first, then pin version once stable
+- **Playbook Configuration**: Customize `playbook-path` if using non-standard names (e.g., `site.yml`, `deploy.yml`)
+- **Custom Rules**: Add `.ansible-lint` to skip rules that don't apply to your workflow (see Custom Configuration above)
+- **Incremental Adoption**: Start with warnings, gradually enforce stricter rules as codebase matures
 
 **Example with path filtering**:
 ```yaml
@@ -446,6 +488,34 @@ jobs:
       working-directory: 'ansible'
       playbook-path: 'site.yml'
 ```
+
+**Troubleshooting**:
+
+Common issues and solutions:
+
+- **ansible-lint failures on role names**:
+  - Error: `role-name: Role name should match pattern '^[a-z][a-z0-9_]+$'`
+  - Solution: Rename role or add `role-name` to `skip_list` in `.ansible-lint`
+
+- **yamllint line-length errors**:
+  - Error: `line too long (120 > 80 characters)`
+  - Solution: Increase `max: 120` in `.yamllint` or set `level: warning` for non-blocking checks
+
+- **Syntax check fails with "undefined variable"**:
+  - Error: `The error appears to be in 'playbook.yml': line 10, column 3`
+  - Solution: Ensure all variables are defined in `vars`, `defaults`, or inventory files
+
+- **"playbook not found" errors**:
+  - Error: `ERROR! the playbook: playbook.yml could not be found`
+  - Solution: Verify `working-directory` and `playbook-path` match your repository structure
+
+- **ansible-lint version conflicts**:
+  - Error: `ansible-lint: error: unrecognized arguments`
+  - Solution: Pin to specific version if using custom rules that depend on specific ansible-lint features
+
+**Related Workflows**:
+- [Terraform Validation](#terraform-validation) - Infrastructure as Code validation with similar three-stage approach
+- [Secret Scanning](#secret-scanning) - Detect secrets in Ansible vault files and configuration
 
 ## Issue Validation Workflows
 
