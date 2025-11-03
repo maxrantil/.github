@@ -20,12 +20,12 @@ This special `.github` repository provides:
 
 ## Workflow Validation Status
 
-**All workflows are production-ready**: 14/14 workflows (100%) have been comprehensively validated.
+**All workflows are production-ready**: 14/15 workflows (93%) have been comprehensively validated.
 
 ### Validation Metrics
 
-- **Total Workflows**: 14
-- **Validated**: 14 (100%)
+- **Total Workflows**: 15
+- **Validated**: 14 (93%)
 - **Test Scenarios**: 100+
 - **Overall Pass Rate**: 100%
 - **Bypass Success Rate**: 0%
@@ -283,6 +283,66 @@ jobs:
 
 **Phase 1** (Current): Validation-only workflow provides guidance
 **Phase 2** (Future): Optional comment-triggered automation (`/cleanup-commits` command)
+
+### Secret Scanning
+
+**File**: `.github/workflows/secret-scan-reusable.yml`
+
+Scans repository for accidentally committed secrets using Gitleaks to prevent credential leaks.
+
+**Usage**:
+```yaml
+jobs:
+  secret-scan:
+    uses: maxrantil/.github/.github/workflows/secret-scan-reusable.yml@main
+    with:
+      gitleaks-version: 'latest'
+      config-path: '.gitleaks.toml'
+```
+
+**Inputs**:
+- `gitleaks-version`: Gitleaks version to use (default: `latest`)
+- `config-path`: Path to custom Gitleaks config file (default: `''`)
+- `fail-on-error`: Fail workflow if secrets are detected (default: `true`)
+- `scan-path`: Path to directory to scan relative to repository root (default: `.`)
+
+**Behavior**:
+- Scans full git history (fetch-depth: 0) for comprehensive secret detection
+- Detects common secret patterns: API keys, tokens, passwords, private keys, etc.
+- Uses MIT-licensed `gacts/gitleaks` action (no license key required)
+- Customizable via `.gitleaks.toml` configuration file
+- Fails workflow by default when secrets detected (configurable)
+
+**Custom Configuration**:
+
+Create `.gitleaks.toml` in repository root for custom rules:
+
+```toml
+title = "Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow common false positives"
+paths = [
+  '''\.md$''',  # Allow example secrets in documentation
+  '''test/fixtures/.*''',  # Allow test fixtures
+]
+
+regexes = [
+  '''example\.com''',  # Allow example domains
+]
+```
+
+**Best Practices**:
+- Add to all repositories with potential secrets (infrastructure, deployment configs)
+- Run on both push and pull_request events
+- Use custom config to reduce false positives
+- Review and remediate any detected secrets immediately
+- Consider scanning all commits on first run to catch historical secrets
+
+**Security Note**: This workflow scans git history for secrets. If secrets are detected, they should be rotated immediately as git history is immutable (secrets remain in commit history even after deletion).
 
 ## Issue Validation Workflows
 
