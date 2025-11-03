@@ -44,11 +44,3 @@ jobs:
     uses: ./.github/workflows/session-handoff-check-reusable.yml
     with:
       base-branch: 'master'
-
-  pre-commit-test:
-    name: Test Pre-commit Caching (Dogfooding)
-    uses: ./.github/workflows/pre-commit-check-reusable.yml
-    with:
-      python-version: '3.x'
-      base-branch: 'master'
-      run-on-all-files: false
