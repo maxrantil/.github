@@ -1,4 +1,4 @@
-# ABOUTME: Reusable Python test workflow - callable from any repository
+# ABOUTME: Reusable Python test workflow with UV dependency caching - callable from any repository
 # PERMISSIONS: contents: read - Required to checkout code and read test files
 # SECURITY: Read-only workflow - no modifications to repository or PRs
 name: Python Tests (Reusable)
@@ -67,8 +67,19 @@ jobs:
         if: always()
         run: |
           echo "### UV Cache Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- Cache directory: $(uv cache dir 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-          echo "- Cache size: $(du -sh $(uv cache dir 2>/dev/null) 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+
+          # Get cache directory safely (may fail on first run)
+          CACHE_DIR=$(uv cache dir 2>/dev/null || echo "")
+
+          if [[ -n "$CACHE_DIR" && -d "$CACHE_DIR" ]]; then
+            echo "- Cache directory: $CACHE_DIR" >> $GITHUB_STEP_SUMMARY
+            CACHE_SIZE=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1 || echo "N/A")
+            echo "- Cache size: $CACHE_SIZE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Cache directory: N/A (first run or UV not initialized)" >> $GITHUB_STEP_SUMMARY
+            echo "- Cache size: N/A" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Dependency installation completed (see timing in previous step)" >> $GITHUB_STEP_SUMMARY
 
