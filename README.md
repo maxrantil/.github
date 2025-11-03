@@ -344,6 +344,57 @@ regexes = [
 
 **Security Note**: This workflow scans git history for secrets. If secrets are detected, they should be rotated immediately as git history is immutable (secrets remain in commit history even after deletion).
 
+### Terraform Validation
+
+**File**: `.github/workflows/terraform-validate-reusable.yml`
+
+Validates Terraform configurations with fmt, validate, and optional plan.
+
+**Usage**:
+```yaml
+jobs:
+  terraform-validate:
+    uses: maxrantil/.github/.github/workflows/terraform-validate-reusable.yml@main
+    with:
+      terraform-version: 'latest'
+      working-directory: './terraform'
+      run-plan: false
+```
+
+**Inputs**:
+- `terraform-version`: Terraform version to use (default: `latest`)
+- `working-directory`: Directory containing Terraform files (default: `./terraform`)
+- `run-plan`: Run terraform plan (requires credentials) (default: `false`)
+
+**Behavior**:
+- Checks Terraform formatting with `terraform fmt -check -recursive`
+- Initializes Terraform with `terraform init -backend=false` (no remote state for validation)
+- Validates Terraform configuration with `terraform validate`
+- Optionally runs `terraform plan` if credentials are available (disabled by default)
+- Runs on Ubuntu latest with explicit `contents: read` permission
+
+**Best Practices**:
+- Use `run-plan: false` for pull request validation (no credentials needed)
+- Use `run-plan: true` only if you have configured Terraform backend credentials
+- Trigger on changes to `terraform/**` paths to avoid unnecessary runs
+- Use with infrastructure repositories (vm-infra, cloud deployments)
+
+**Example with path filtering**:
+```yaml
+name: Terraform Validation
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'terraform/**'
+
+jobs:
+  validate:
+    uses: maxrantil/.github/.github/workflows/terraform-validate-reusable.yml@main
+    with:
+      working-directory: 'terraform'
+```
+
 ## Issue Validation Workflows
 
 Phase 2 workflows for automated issue validation, labeling, and policy enforcement.
