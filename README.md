@@ -395,6 +395,58 @@ jobs:
       working-directory: 'terraform'
 ```
 
+### Ansible Linting
+
+**File**: `.github/workflows/ansible-lint-reusable.yml`
+
+Validates Ansible playbooks with ansible-lint, YAML validation, and syntax checking.
+
+**Usage**:
+```yaml
+jobs:
+  ansible-lint:
+    uses: maxrantil/.github/.github/workflows/ansible-lint-reusable.yml@main
+    with:
+      working-directory: './ansible'
+      ansible-lint-version: 'latest'
+      playbook-path: 'playbook.yml'
+```
+
+**Inputs**:
+- `working-directory`: Directory containing Ansible files (default: `./ansible`)
+- `ansible-lint-version`: ansible-lint version to use (default: `latest`)
+- `playbook-path`: Path to playbook file relative to working-directory (default: `playbook.yml`)
+
+**Behavior**:
+- Runs ansible-lint on specified playbook for best practices validation
+- Validates YAML syntax with yamllint for all `.yml` and `.yaml` files
+- Performs Ansible syntax check with `ansible-playbook --syntax-check`
+- Runs two parallel jobs: ansible-lint (with yamllint) and ansible-syntax
+- Uses Python 3.12 with explicit `contents: read` permission
+
+**Best Practices**:
+- Trigger on changes to `ansible/**` paths to avoid unnecessary runs
+- Use `ansible-lint-version: 'latest'` for automatic updates (default)
+- Specify exact version for reproducible builds in production environments
+- Customize playbook-path if using non-standard playbook names
+
+**Example with path filtering**:
+```yaml
+name: Ansible Linting
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'ansible/**'
+
+jobs:
+  lint:
+    uses: maxrantil/.github/.github/workflows/ansible-lint-reusable.yml@main
+    with:
+      working-directory: 'ansible'
+      playbook-path: 'site.yml'
+```
+
 ## Issue Validation Workflows
 
 Phase 2 workflows for automated issue validation, labeling, and policy enforcement.
