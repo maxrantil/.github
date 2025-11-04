@@ -1,0 +1,4 @@
+# Map any Claude references to repository owner
+# This ensures GitHub shows correct attribution
+Max Rantil <rantil@pm.me> Claude <noreply@anthropic.com>
+Max Rantil <rantil@pm.me> claude <noreply@anthropic.com>
