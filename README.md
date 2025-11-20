@@ -1,4 +1,3 @@
-# ABOUTME: Central documentation for .github reusable workflows repository
 # .github
 
 Centralized reusable workflows and templates for all maxrantil repositories.
